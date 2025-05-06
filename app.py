@@ -1,35 +1,40 @@
-from main_data import df, scatter_traces
+# Importing required modules and functions
+from main_data import df, scatter_traces  # Custom data and traces for plotting
 
 import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output, State
+from dash import dcc, html  # Dash components for creating the layout
+from dash.dependencies import (
+    Input,
+    Output,
+    State,
+)  # For handling callbacks and interactivity
 
-
+# Commented out import for data processing, likely unused
 # from data_processing import process_data
-from plotting import (
+from plotting import (  # Custom plotting functions imported from the 'plotting' module
     create_scatter_layout,
     plot_time_fft_multiple,
     plot_time_fft_single,
     plot_selected_PRPD_single,
     plot_selected_PRPD_multiple,
 )
-import plotly.graph_objects as go
+import plotly.graph_objects as go  # Used for detailed graph customization
 
-
-# Inicialización de la aplicación
+# Initialization of the Dash application
 app = dash.Dash(__name__, title="TRPD Visualizer")
 
-
-# Layout de la aplicación
+# Application layout
 app.layout = html.Div(
     [
+        # A hidden store for storing zoom data from scatter plots
         dcc.Store(id="scatter-selected-zoom-data"),
         html.Div(
-            [  # Todo el contenido de la app
-                html.Div(  # Títulos
+            [  # Main content of the app
+                html.Div(  # Title section
                     [
                         html.Div(
                             [
+                                # Main title of the application
                                 html.H1(
                                     "TRPD Interactive Interface",
                                     style={
@@ -44,6 +49,7 @@ app.layout = html.Div(
                                         "flex": "1",
                                     },
                                 ),
+                                # Subtitle and version information
                                 html.Div(
                                     [
                                         html.Div(
@@ -81,26 +87,30 @@ app.layout = html.Div(
                         )
                     ],
                     style={
-                        "background": "linear-gradient(90deg, #03396c, #6497b1)",
-                        "borderRadius": "10px 10px 0 0",
+                        "background": "linear-gradient(90deg, #03396c, #6497b1)",  # Gradient background
+                        "borderRadius": "10px 10px 0 0",  # Rounded corners
                         "marginBottom": "20px",
                         "height": "90px",
-                        "boxShadow": "0 4px 12px rgba(0,0,0,0.2)",
+                        "boxShadow": "0 4px 12px rgba(0,0,0,0.2)",  # Shadow effect
                         "position": "relative",
                     },
                 ),
-                html.Div(  # Gráficos
-                    [  # Tabs
+                html.Div(  # Graphs section
+                    [
+                        # Tabs for switching between different views
                         dcc.Tabs(
-                            [  # Tabs
-                                dcc.Tab(  # PD Data Analyzer
+                            [
+                                # Tab for the PD Data Analyzer
+                                dcc.Tab(
                                     label="PD Data Analyzer",
                                     children=[
                                         html.Div(
-                                            [  # Todos los gráficos
-                                                html.Div(  # Scatter Plot
+                                            [
+                                                # Scatter Plot Section
+                                                html.Div(
                                                     [
-                                                        html.Div(  # Scatter Plot Principal
+                                                        # Main Scatter Plot
+                                                        html.Div(
                                                             [
                                                                 dcc.Graph(
                                                                     id="scatter-plot",
@@ -109,9 +119,9 @@ app.layout = html.Div(
                                                                         "layout": create_scatter_layout(),
                                                                     },
                                                                     config={
-                                                                        "displayModeBar": True,
+                                                                        "displayModeBar": True,  # Enable toolbar
                                                                         "toImageButtonOptions": {
-                                                                            "format": "png",
+                                                                            "format": "png",  # Export as PNG
                                                                             "filename": "scatter_plot",
                                                                             "height": 600,
                                                                             "width": 1000,
@@ -122,14 +132,15 @@ app.layout = html.Div(
                                                             ],
                                                             style={
                                                                 "marginBottom": "20px",
-                                                                "borderRadius": "8px",
+                                                                "borderRadius": "8px",  # Rounded corners
                                                                 "padding": "15px",
                                                                 "backgroundColor": "#fefefe",
                                                                 "border": "1px solid #ccc",
                                                                 "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
                                                             },
                                                         ),
-                                                        html.Div(  # Scatter Plot Detalle
+                                                        # Scatter Plot for detailed view
+                                                        html.Div(
                                                             [
                                                                 dcc.Graph(
                                                                     id="scatter-plot-selected",
@@ -161,13 +172,15 @@ app.layout = html.Div(
                                                     ],
                                                     style={
                                                         "width": "50%",
-                                                        "display": "block",  # Cambiado de inline-block a block para independencia
-                                                        "marginLeft": "2%",  # Espacio para separación
+                                                        "display": "block",
+                                                        "marginLeft": "2%",
                                                     },
                                                 ),
-                                                html.Div(  # Time Series and FFT Plots
+                                                # Time Series and FFT Plots Section
+                                                html.Div(
                                                     [
-                                                        html.Div(  # Time Plot
+                                                        # Time Series Plot
+                                                        html.Div(
                                                             [
                                                                 dcc.Graph(
                                                                     id="time-series",
@@ -196,7 +209,8 @@ app.layout = html.Div(
                                                                 "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
                                                             },
                                                         ),
-                                                        html.Div(  # FFT Plot
+                                                        # FFT Plot
+                                                        html.Div(
                                                             [
                                                                 dcc.Graph(
                                                                     id="fft-plot",
@@ -228,8 +242,8 @@ app.layout = html.Div(
                                                     ],
                                                     style={
                                                         "width": "50%",
-                                                        "display": "block",  # Cambiado de inline-block a block para independencia
-                                                        "marginLeft": "2%",  # Espacio para separación
+                                                        "display": "block",
+                                                        "marginLeft": "2%",
                                                     },
                                                 ),
                                             ],
@@ -253,15 +267,17 @@ app.layout = html.Div(
 )
 
 
+# Callback for updating time-series and FFT plots
 @app.callback(
     [Output("time-series", "figure"), Output("fft-plot", "figure")],
     [Input("scatter-plot", "clickData"), Input("scatter-plot", "selectedData")],
 )
 def update_plots(clickData, selectedData):
-    ctx = dash.callback_context
+    ctx = dash.callback_context  # Get trigger context
     selected_PRPD_fig, fft_fig = [], []
 
     if not ctx.triggered:
+        # Default selection logic
         selected_id = df["id"].iloc[0]
         selected_data = df[df["id"] == selected_id].iloc[0]
         selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
@@ -269,17 +285,19 @@ def update_plots(clickData, selectedData):
         triggered_id = ctx.triggered[0]["prop_id"]
 
         if "clickData" in triggered_id and clickData:
+            # Handle click interaction
             selected_id = clickData["points"][0]["customdata"][3]
             selected_data = df[df["id"] == selected_id].iloc[0]
             selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
 
         elif "selectedData" in triggered_id and selectedData:
+            # Handle selection box interaction
             selected_ids = [pt["customdata"][3] for pt in selectedData["points"]]
-            print(selected_ids)
             selected_data = df[df["id"].isin(selected_ids)]
             selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data)
 
         else:
+            # Default fallback
             selected_id = df["id"].iloc[0]
             selected_data = df[df["id"] == selected_id].iloc[0]
             selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
@@ -287,6 +305,7 @@ def update_plots(clickData, selectedData):
     return selected_PRPD_fig, fft_fig
 
 
+# Callback for updating the scatter plot based on time-series interaction
 @app.callback(
     Output("scatter-plot-selected", "figure"),
     Input("time-series", "clickData"),
@@ -294,9 +313,10 @@ def update_plots(clickData, selectedData):
     State("scatter-plot-selected", "relayoutData"),
 )
 def update_scatter_plot_selected(clickData, selectedData, relayoutData):
-    ctx = dash.callback_context
+    ctx = dash.callback_context  # Get trigger context
     selected_PRPD_fig = [], []
 
+    # Handle zoom or relayout data
     if relayoutData and "xaxis.range[0]" in relayoutData:
         stored_layout = go.Layout(
             title=f"PRPD",
@@ -313,8 +333,8 @@ def update_scatter_plot_selected(clickData, selectedData, relayoutData):
             ],
             uirevision=True,
         )
-
     else:
+        # Default layout
         stored_layout = go.Layout(
             title=f"PRPD",
             titlefont=dict(size=14),
@@ -324,6 +344,7 @@ def update_scatter_plot_selected(clickData, selectedData, relayoutData):
         )
 
     if not ctx.triggered:
+        # Default selection logic
         selected_id = df["id"].iloc[0]
         selected_data = df[df["id"] == selected_id].iloc[0]
         selected_PRPD_fig = plot_selected_PRPD_single(selected_data, stored_layout)
@@ -331,18 +352,20 @@ def update_scatter_plot_selected(clickData, selectedData, relayoutData):
         triggered_id = ctx.triggered[0]["prop_id"]
 
         if "clickData" in triggered_id and clickData:
+            # Handle click interaction
             selected_id = clickData["points"][0]["customdata"][0]
             selected_data = df[df["id"] == selected_id].iloc[0]
             selected_PRPD_fig = plot_selected_PRPD_single(selected_data, stored_layout)
 
         elif "selectedData" in triggered_id and selectedData:
+            # Handle selection box interaction
             selected_ids = [pt["customdata"][0] for pt in selectedData["points"]]
             selected_data = df[df["id"].isin(selected_ids)]
             selected_PRPD_fig = plot_selected_PRPD_multiple(
                 selected_data, stored_layout
             )
-
         else:
+            # Default fallback
             selected_id = df["id"].iloc[0]
             selected_data = df[df["id"] == selected_id].iloc[0]
             selected_PRPD_fig = plot_selected_PRPD_single(selected_data, stored_layout)
@@ -350,8 +373,9 @@ def update_scatter_plot_selected(clickData, selectedData, relayoutData):
     return selected_PRPD_fig
 
 
+# Main entry point
 if __name__ == "__main__":
-    host = "127.0.0.1"
-    port = 8002
-    print(f"Dash app is running on: http://{host}:{port}/")
-    app.run(debug=False, host=host, port=port)
+    host = "127.0.0.1"  # Host address for the app
+    port = 8002  # Port for the app
+    print(f"Dash app is running on: http://{host}:{port}/")  # Print app URL
+    app.run(debug=False, host=host, port=port)  # Start the server without debug mode
