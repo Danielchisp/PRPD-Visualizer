@@ -16,6 +16,17 @@ def adjust_trigger_interface(x, y, color):
     # Crear línea horizontal inicial en y=0
     hline = ax.axhline(y=0, color="r", linestyle="--", linewidth=2, picker=5)
 
+    # Añadir texto para mostrar el valor actual
+    trigger_text = ax.text(
+        0.02,
+        0.95,
+        "0 V",
+        transform=ax.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+    )
+
     # Usar una clase o atributos de fig para evitar variables globales
     def on_pick(event):
         if event.artist == hline:
@@ -23,7 +34,10 @@ def adjust_trigger_interface(x, y, color):
 
     def on_motion(event):
         if hasattr(fig, "dragging") and fig.dragging and event.ydata is not None:
-            hline.set_ydata([event.ydata, event.ydata])
+            current_y = event.ydata
+            hline.set_ydata([current_y, current_y])
+            # Actualizar el texto con el valor actual y unidades
+            trigger_text.set_text(f"{current_y:.4f} V")
             fig.canvas.draw()
 
     def on_release(event):
@@ -86,10 +100,23 @@ while enableWebViewer == False:
     TRIGGER_SETTINGS["CH4"]["main"] = adjust_trigger_interface(time4, signalCH4, "red")
     print(f"CH4 main trigger: {TRIGGER_SETTINGS['CH4']['main']} V")
 
-    enableWebViewer = not messagebox.askyesno(
-        "Trigger Setting", "Do you want to re-adjust the trigger?"
+    enableWebViewer = messagebox.askyesno(
+        "Trigger Setting", "Do you want to proceed with TRPD calculation?"
     )
 
 df, scatter_traces, impulse_ave_final, time1 = process_data(
     ch1, ch2, ch3, ch4, time1, time2, time3, time4
 )
+
+# output_file = simpledialog.askstring(
+#     "Save DataFrame", "Enter the filename to save the DataFrame (e.g., output.csv):"
+# )
+
+# if output_file:
+#     try:
+#         df.to_csv(output_file, index=False)
+#         messagebox.showinfo(
+#             "Success", f"DataFrame successfully saved to {output_file}."
+#         )
+#     except Exception as e:
+#         messagebox.showerror("Error", f"Failed to save DataFrame: {e}")

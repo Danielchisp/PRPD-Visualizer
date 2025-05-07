@@ -20,6 +20,7 @@ from plotting import (  # Custom plotting functions imported from the 'plotting'
 )
 import plotly.graph_objects as go  # Used for detailed graph customization
 
+
 # Initialization of the Dash application
 app = dash.Dash(__name__, title="TRPD Visualizer")
 
@@ -95,6 +96,11 @@ app.layout = html.Div(
                         "position": "relative",
                     },
                 ),
+                dcc.ConfirmDialog(
+                    id="no-scatter-data-selected",
+                    message="No data selected. Please select data to download.",
+                ),
+                # html.Div([html.Button(id="button-1"), html.Button(id="button-2")]),
                 html.Div(  # Graphs section
                     [
                         # Tabs for switching between different views
@@ -104,6 +110,37 @@ app.layout = html.Div(
                                 dcc.Tab(
                                     label="PD Data Analyzer",
                                     children=[
+                                        html.Div(
+                                            [
+                                                html.Button(
+                                                    "Download Selected Data TRPD",
+                                                    id="button-1",
+                                                    style={"margin-left": "20px"},
+                                                ),
+                                                dcc.Download(id="download-data-1"),
+                                                html.Button(
+                                                    "Download Selected Data Classification Map",
+                                                    id="button-2",
+                                                    style={"margin-left": "20px"},
+                                                ),
+                                                dcc.Download(id="download-data-2"),
+                                                html.Button(
+                                                    "Button 3",
+                                                    id="button-3",
+                                                    style={"margin-left": "20px"},
+                                                ),
+                                                dcc.Download(id="download-data-3"),
+                                            ],
+                                            style={
+                                                "marginBottom": "20px",
+                                                "borderRadius": "8px",
+                                                "padding": "15px",
+                                                "backgroundColor": "#fefefe",
+                                                "border": "1px solid #ccc",
+                                                "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                "textAlign": "center",
+                                            },
+                                        ),
                                         html.Div(
                                             [
                                                 # Scatter Plot Section
@@ -371,6 +408,24 @@ def update_scatter_plot_selected(clickData, selectedData, relayoutData):
             selected_PRPD_fig = plot_selected_PRPD_single(selected_data, stored_layout)
 
     return selected_PRPD_fig
+
+
+@app.callback(
+    Output("download-data-1", "data"),
+    Output("no-scatter-data-selected", "displayed"),
+    Input("button-1", "n_clicks"),
+    State("scatter-plot", "selectedData"),
+)
+def download_selected_data_TRPD(button1, scatterSelectedData):
+    if button1:
+        if scatterSelectedData is not None:
+            scatterSelectedIds = [
+                point["customdata"][3] for point in scatterSelectedData["points"]
+            ]
+            df_filtrado = df[df["id"].isin(scatterSelectedIds)]
+            df_signals = df_filtrado.pivot(index=None, columns="id", values="signal")
+
+            return dcc.send_data_frame(df_signals.to_csv, "testSelectedCsv.csv")
 
 
 # Main entry point
