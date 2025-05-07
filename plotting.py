@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
-from main_data import impulse_ave_final, time1
+
+# from main_data import impulse_ave_final, time1
 
 
 def create_scatter_layout():
@@ -137,7 +138,7 @@ def plot_time_fft_multiple(selected_data):
     return time_fig, fft_fig
 
 
-def plot_selected_PRPD_single(selected_data, stored_layout):
+def plot_selected_PRPD_single(selected_data, stored_layout, time, impulse):
     xValues = np.array(selected_data["x"].tolist())
     yValues = np.array(selected_data["y"].tolist())
 
@@ -151,8 +152,8 @@ def plot_selected_PRPD_single(selected_data, stored_layout):
                 name="Selected Data",
             ),
             go.Scatter(
-                x=time1,
-                y=impulse_ave_final,
+                x=time,
+                y=impulse,
                 mode="lines",
                 line=dict(color="black", width=2.5),
                 name="Impulse",
@@ -164,7 +165,7 @@ def plot_selected_PRPD_single(selected_data, stored_layout):
     return PRPD_single_fig
 
 
-def plot_selected_PRPD_multiple(selected_data, stored_layout):
+def plot_selected_PRPD_multiple(selected_data, stored_layout, time, impulse):
     xValues = np.array(selected_data["x"].tolist())
     yValues = np.array(selected_data["y"].tolist())
 
@@ -177,8 +178,8 @@ def plot_selected_PRPD_multiple(selected_data, stored_layout):
                 line=dict(color="blue"),
             ),
             go.Scatter(
-                x=time1,
-                y=impulse_ave_final,
+                x=time,
+                y=impulse,
                 mode="lines",
                 line=dict(color="black", width=2.5),
                 name="Impulse",

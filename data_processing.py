@@ -95,10 +95,6 @@ def load_data(folder):
     time4 = np.linspace(0, finalTime, len(ch4))
 
     print("Data loaded successfully.")
-    print(f"Impulse: {len(ch1)} samples")
-    print(f"Ferrite 1: {len(ch2)} samples")
-    print(f"Ferrite 2: {len(ch3)} samples")
-    print(f"Antenna: {len(ch4)} samples")
 
     return ch1, ch2, ch3, ch4, time1, time2, time3, time4
 
