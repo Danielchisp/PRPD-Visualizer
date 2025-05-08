@@ -77,12 +77,12 @@ def load_app_data():
     global df, scatter_traces, impulse_ave_final, time1, status_label
 
     status_label.config(
-        text="Searching for Measurement Folder \n CH1.csv - CH2.csv - CH3.csv - CH4.csv",
+        text="Searching for Measurement Folder \nCH1.csv - CH2.csv - CH3.csv - CH4.csv",
     )
 
     folder = get_input_parameters()
 
-    status_label.config(text="Folder found!\n Loading data, this can take a while...")
+    status_label.config(text="Folder found!\nLoading data, this can take a while...")
     status_label.update()
 
     ch1, ch2, ch3, ch4, time1, time2, time3, time4 = load_data(folder)
@@ -92,7 +92,7 @@ def load_app_data():
     enableWebViewer = False
 
     status_label.config(
-        text="Peak Detection Trigger Adjustment\n Select the signal to adjust"
+        text="Peak Detection Trigger Adjustment\nSelect the signal to adjust"
     )
 
     while enableWebViewer == False:
