@@ -28,6 +28,8 @@ TRIGGER_SETTINGS = {
 }
 
 window = 1500
+
+
 # Configuración de ventanas
 WINDOW_SETTINGS = {
     "window": window,

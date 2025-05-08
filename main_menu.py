@@ -76,7 +76,14 @@ def adjust_trigger_interface(x, y, color):
 def load_app_data():
     global df, scatter_traces, impulse_ave_final, time1, status_label
 
+    status_label.config(
+        text="Searching for Measurement Folder \n CH1.csv - CH2.csv - CH3.csv - CH4.csv",
+    )
+
     folder = get_input_parameters()
+
+    status_label.config(text="Folder found!\n Loading data, this can take a while...")
+    status_label.update()
 
     ch1, ch2, ch3, ch4, time1, time2, time3, time4 = load_data(folder)
 
@@ -84,10 +91,14 @@ def load_app_data():
 
     enableWebViewer = False
 
+    status_label.config(
+        text="Peak Detection Trigger Adjustment\n Select the signal to adjust"
+    )
+
     while enableWebViewer == False:
         messagebox.showinfo(
-            "Active Process",
-            "The peak detection trigger will be adjusted. A graph will be displayed for a specific signal.",
+            "Process Notification",
+            "The peak detection trigger adjustment process will now begin. A graph will be displayed for the selected signal.",
         )
 
         signalPicked = simpledialog.askinteger(
@@ -125,7 +136,8 @@ def load_app_data():
     )
     # Desbloquear el botón de visualización
     visualize_btn.config(state=tk.NORMAL)
-    status_label.config(text="Data loaded succesfully!", fg="green")
+
+    status_label.config(text="Peaks detected succesfully! \n ")
 
 
 def toggle_visualize_button(state):
@@ -148,7 +160,7 @@ def visualize_data():
     # Verificar el estado del hilo de Dash
     check_dash_thread()
 
-    status_label.config(text="Visualizing data...", fg="blue")
+    status_label.config(text="Visualizing data...")
 
 
 def setup_gui():
@@ -157,44 +169,130 @@ def setup_gui():
 
     root = tk.Tk()
     root.title("Main Menu")
-    root.geometry("400x400")  # Ajustar el tamaño de la ventana
+    root.geometry("800x300")  # Ajustar el tamaño de la ventana
     root.resizable(False, False)
 
     # Marco principal
-    main_frame = tk.Frame(root, padx=20, pady=20)
+    main_frame = ttk.Frame(root)
     main_frame.pack(expand=True, fill=tk.BOTH)
 
+    columna1 = ttk.Frame(main_frame, padding="5")
+    columna1.grid(row=0, column=0, sticky="nsew")
+
     # Título
-    tk.Label(main_frame, text="TRPD Analyzer & Viewer", font=("Arial", 16)).pack(
-        pady=10
+    ttk.Label(columna1, text="TRPD Analyzer & Viewer", font=("Arial", 10, "bold")).pack(
+        pady=5
     )
 
     # Botones
-    tk.Button(
-        main_frame,
+    ttk.Button(
+        columna1,
         text="1. Load Data (.CSV)",
         command=load_app_data,  # Llama directamente a load_app_data
-        width=20,
-        height=2,
     ).pack(pady=5)
 
     visualize_btn = tk.Button(
-        main_frame,
+        columna1,
         text="2. Visualize Data",
         command=visualize_data,
-        width=20,
-        height=2,
         state=tk.DISABLED,
     )
     visualize_btn.pack(pady=5)
 
-    tk.Button(main_frame, text="3. Salir", command=root.quit, width=20, height=2).pack(
+    ttk.Button(columna1, text="3. Salir", command=root.quit).pack(pady=5)
+
+    # Etiqueta de estado
+    status_label = ttk.Label(columna1, text="No data loaded")
+    status_label.pack(pady=10)
+
+    columna2 = ttk.Frame(main_frame, padding="5")
+    columna2.grid(row=0, column=1, sticky="nsew")
+
+    ttk.Label(
+        columna2, text="Trigger Detection Main Parameters", font=("Arial", 10, "bold")
+    ).pack(pady=5)
+
+    ttk.Label(columna2, text="Time Window (us):").pack(anchor="w")
+    spinbox_timewindow = ttk.Spinbox(columna2, from_=0.01, to=10, increment=0.1)
+    spinbox_timewindow.pack(fill=tk.X, pady=5)
+    spinbox_timewindow.set(1)
+
+    ttk.Label(columna2, text="Samplig Frequency (GHz):").pack(anchor="w")
+    spinbox_sampling_frequency = ttk.Spinbox(columna2, from_=0.1, to=10, increment=0.5)
+    spinbox_sampling_frequency.pack(fill=tk.X, pady=5)
+    spinbox_sampling_frequency.set(5)
+
+    ttk.Label(columna2, text="Main PD Time Init (us):").pack(anchor="w")
+    spinbox_mainPDinit = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
+    spinbox_mainPDinit.pack(fill=tk.X, pady=5)
+    spinbox_mainPDinit.set(50)
+
+    ttk.Label(columna2, text="Main PD Time End (us):").pack(anchor="w")
+    spinbox_mainPDend = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
+    spinbox_mainPDend.pack(fill=tk.X, pady=5)
+    spinbox_mainPDend.set(50)
+
+    ttk.Label(columna2, text="Reverse PD Time Init (us):").pack(anchor="w")
+    spinbox_reversePDinit = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
+    spinbox_reversePDinit.pack(fill=tk.X, pady=5)
+    spinbox_reversePDinit.set(50)
+
+    columna3 = ttk.Frame(main_frame, padding="5")
+    columna3.grid(row=0, column=2, sticky="nsew")
+
+    ttk.Label(columna3, text="Columna 3 - Botones", font=("Arial", 10, "bold")).pack(
         pady=5
     )
 
-    # Etiqueta de estado
-    status_label = tk.Label(main_frame, text="No data loaded", fg="red")
-    status_label.pack(pady=10)
+    ttk.Label(columna3, text="Entrada numérica:").pack(anchor="w")
+    spinbox = ttk.Spinbox(columna3, from_=0, to=100, increment=5)
+    spinbox.pack(fill=tk.X, pady=5)
+    spinbox.set(50)
+
+    ttk.Label(columna3, text="Entrada numérica:").pack(anchor="w")
+    spinbox = ttk.Spinbox(columna3, from_=0, to=100, increment=5)
+    spinbox.pack(fill=tk.X, pady=5)
+    spinbox.set(50)
+
+    ttk.Label(columna3, text="Entrada numérica:").pack(anchor="w")
+    spinbox = ttk.Spinbox(columna3, from_=0, to=100, increment=5)
+    spinbox.pack(fill=tk.X, pady=5)
+    spinbox.set(50)
+
+    ttk.Label(columna3, text="Entrada numérica:").pack(anchor="w")
+    spinbox = ttk.Spinbox(columna3, from_=0, to=100, increment=5)
+    spinbox.pack(fill=tk.X, pady=5)
+    spinbox.set(50)
+
+    columna4 = ttk.Frame(main_frame, padding="5")
+    columna4.grid(row=0, column=3, sticky="nsew")
+
+    ttk.Label(columna4, text="Channel Assignment", font=("Arial", 10, "bold")).pack(
+        pady=5
+    )
+
+    ttk.Label(columna4, text="Impulse").pack(anchor="w")
+
+    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    combo.pack(fill=tk.X, pady=5)
+    combo.set("CH1")
+
+    ttk.Label(columna4, text="Main HFCT").pack(anchor="w")
+
+    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    combo.pack(fill=tk.X, pady=5)
+    combo.set("CH2")
+
+    ttk.Label(columna4, text="Reverse HFCT").pack(anchor="w")
+
+    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    combo.pack(fill=tk.X, pady=5)
+    combo.set("CH3")
+
+    ttk.Label(columna4, text="Antenna").pack(anchor="w")
+    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    combo.pack(fill=tk.X, pady=5)
+    combo.set("CH4")
 
     return root
 
