@@ -27,7 +27,7 @@ TRIGGER_SETTINGS = {
     "CH4": {"main": 0.01, "reverse": 100},
 }
 
-window = 1500
+window = 2500
 
 
 # Configuración de ventanas

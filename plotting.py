@@ -4,30 +4,20 @@ import plotly.graph_objects as go
 # from main_data import impulse_ave_final, time1
 
 
+import plotly.graph_objs as go
+
+
 def create_scatter_layout():
     return go.Layout(
         title="",
-        titlefont=dict(size=16, color="#2a3f5f"),
         xaxis=dict(
-            title="Time (us)",
-            titlefont=dict(size=12),
-            gridcolor="rgba(211, 211, 211, 0.5)",
-            showline=False,
-            linecolor="black",
-            mirror=False,
+            title=dict(text="X-Axis Label", font=dict(size=14)),
+            tickfont=dict(size=12),
         ),
         yaxis=dict(
-            title="Voltage (V)",
-            titlefont=dict(size=12),
-            gridcolor="rgba(211, 211, 211, 0.5)",
-            showline=False,
-            linecolor="black",
-            mirror=False,
+            title=dict(text="Y-Axis Label", font=dict(size=14)),
+            tickfont=dict(size=12),
         ),
-        hovermode="closest",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=60, r=30, b=60, t=60),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
@@ -47,8 +37,10 @@ def plot_time_fft_single(selected_data):
             )
         ],
         "layout": go.Layout(
-            title=f"Time Resolved PD",
-            titlefont=dict(size=14),
+            title=dict(
+                text="Time Resolved PD",  # Título del gráfico
+                font=dict(size=16),  # Tamaño de la fuente
+            ),
             xaxis=dict(title="Time (us)"),
             yaxis=dict(title="(a.u)"),
         ),
@@ -59,8 +51,10 @@ def plot_time_fft_single(selected_data):
             go.Scatter(x=freqs, y=fft_values, mode="lines", line=dict(color="red"))
         ],
         "layout": go.Layout(
-            title=f"Frequency Resolved PD",
-            titlefont=dict(size=14),
+            title=dict(
+                text=f"Frequency Resolved PD",  # Título del gráfico
+                font=dict(size=16),  # Tamaño de la fuente
+            ),
             xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"]]),
             yaxis=dict(title="(a.u)"),
         ),
@@ -102,9 +96,11 @@ def plot_time_fft_multiple(selected_data):
             )
         ],
         "layout": go.Layout(
-            title=f"Classification Map",
-            titlefont=dict(size=14),
-            xaxis=dict(title="Equivalent Time (s)"),
+            title=dict(
+                text="Classification Map",
+                font=dict(size=16),  # Define el tamaño de la fuente aquí
+            ),
+            xaxis=dict(title="Time (s)"),
             yaxis=dict(title="Equivalent Frequency (Hz)"),
         ),
     }
@@ -128,8 +124,10 @@ def plot_time_fft_multiple(selected_data):
             ),
         ],
         "layout": go.Layout(
-            title=f"Frequency Resolved PD",
-            titlefont=dict(size=14),
+            title=dict(
+                text="Frequency Resolved PD",
+                font=dict(size=14),  # Define el tamaño de la fuente aquí
+            ),
             xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]),
             yaxis=dict(title="(a.u)"),
         ),
