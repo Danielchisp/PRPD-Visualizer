@@ -1,7 +1,8 @@
-# Importing required modules and functions
 # from main_data import df, scatter_traces  # Custom data and traces for plotting
 
 import dash
+import signal
+import os
 from dash import dcc, html  # Dash components for creating the layout
 from dash.dependencies import (
     Input,
@@ -9,7 +10,6 @@ from dash.dependencies import (
     State,
 )  # For handling callbacks and interactivity
 
-# Commented out import for data processing, likely unused
 # from data_processing import process_data
 from plotting import (  # Custom plotting functions imported from the 'plotting' module
     create_scatter_layout,
@@ -20,8 +20,17 @@ from plotting import (  # Custom plotting functions imported from the 'plotting'
 )
 import plotly.graph_objects as go  # Used for detailed graph customization
 
+dash_server_process = None
+
 
 def create_dash_app(df, scatter_traces, time, impulse):
+
+    global dash_server_process
+
+    if dash_server_process:
+        os.kill(dash_server_process.pid, signal.SIGTERM)
+        dash_server_process = None
+        time.sleep(1)  # Espera a que el puerto se libere
 
     # Initialization of the Dash application
     app = dash.Dash(__name__, title="TRPD Visualizer")
@@ -129,7 +138,7 @@ def create_dash_app(df, scatter_traces, time, impulse):
                                                     ),
                                                     dcc.Download(id="download-data-2"),
                                                     html.Button(
-                                                        "Button 3",
+                                                        "Not assigned",
                                                         id="button-3",
                                                         style={
                                                             "margin-left": "20px",
@@ -325,7 +334,9 @@ def create_dash_app(df, scatter_traces, time, impulse):
         if not ctx.triggered:
             # Default selection logic
             selected_id = df["id"].iloc[0]
+            # print(f"Default selected id: {selected_id}")
             selected_data = df[df["id"] == selected_id].iloc[0]
+            # print(f"Default selected data: {selected_data}")
             selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
         else:
             triggered_id = ctx.triggered[0]["prop_id"]
@@ -334,6 +345,7 @@ def create_dash_app(df, scatter_traces, time, impulse):
                 # Handle click interaction
                 selected_id = clickData["points"][0]["customdata"][3]
                 selected_data = df[df["id"] == selected_id].iloc[0]
+                # print(f"Default selected data: {selected_data}")
                 selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
 
             elif "selectedData" in triggered_id and selectedData:

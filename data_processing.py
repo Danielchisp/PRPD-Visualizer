@@ -9,9 +9,9 @@ from config import (
     CHANNEL_COLORS,
     CHANNEL_DICT,
     FFT_LIMITS,
-    FS,
     TRIGGER_SETTINGS,
     WINDOW_SETTINGS,
+    impulseDownsample,
 )
 
 
@@ -28,7 +28,9 @@ def W_eq_squared(f: np.ndarray, Pxx: np.ndarray) -> float:
 
 def process_channel(channel_name, channel_cfg, impulsesNum):
     signals_list = []
-    halfWindow = WINDOW_SETTINGS["half_window"]
+    window_antenna = WINDOW_SETTINGS["window_antenna"]
+    window_HFCT = WINDOW_SETTINGS["window_HFCT"]
+    FS = WINDOW_SETTINGS["fs"]
 
     for i in tqdm(range(impulsesNum), desc=f"Procesando {channel_name.upper()}"):
         signal_num = 2 * i + 1
@@ -39,9 +41,17 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
             ("Reverse", channel_cfg["reverse_peaks"][i]),
         ]:
             for peak_idx in peaks:
-                start = peak_idx - halfWindow
-                end = peak_idx + halfWindow
-                seg = signal[start:end]
+
+                if channel_name == "CH4":
+
+                    start = peak_idx - int(0.2 * window_antenna)
+                    end = peak_idx + int(0.8 * window_antenna)
+                    seg = signal[start:end]
+
+                else:
+                    start = peak_idx - int(0.2 * window_HFCT)
+                    end = peak_idx + int(0.8 * window_HFCT)
+                    seg = signal[start:end]
 
                 f, Pxx = welch(seg, FS, nperseg=min(5000, len(seg)), scaling="spectrum")
 
@@ -56,7 +66,6 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                         "fft_values": Pxx,
                         "freqs": f,
                         "amplitude": signal[peak_idx],
-                        "noise": 0,
                         "time": channel_cfg["time"][peak_idx],
                         "x": channel_cfg["time"][peak_idx],
                         "y": signal[peak_idx],
@@ -70,6 +79,8 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                         "W2": W2,
                     }
                 )
+
+    print(f"Processed {len(signals_list)} signals for {channel_name.upper()}.")
 
     return signals_list
 
@@ -96,12 +107,13 @@ def load_data(folder):
 
     print("Data loaded successfully.")
 
+    time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
+
     return ch1, ch2, ch3, ch4, time1, time2, time3, time4
 
 
 def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
     impulsesNum = int(len(ch1.columns) / 2)
-    # setMode = 1  # For testing purposes, set to 1 directly
 
     mainDischargesCH2 = []
     mainDischargesCH3 = []
@@ -154,12 +166,12 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
                         ]
                     ],
                     height=ch_data["trigger"],
-                    distance=WINDOW_SETTINGS["window"],
+                    distance=WINDOW_SETTINGS["window_antenna"],
                 )
                 reverse_peaks, _ = find_peaks(
                     signal[WINDOW_SETTINGS["reverse_time_init"] : -5000],
                     height=ch_data["trigger"],
-                    distance=WINDOW_SETTINGS["window"],
+                    distance=WINDOW_SETTINGS["window_antenna"],
                 )
             else:
                 main_peaks, _ = find_peaks(
@@ -169,12 +181,12 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
                         ]
                     ],
                     height=ch_data["trigger"],
-                    distance=WINDOW_SETTINGS["window"],
+                    distance=WINDOW_SETTINGS["window_HFCT"],
                 )
                 reverse_peaks, _ = find_peaks(
                     -signal[WINDOW_SETTINGS["reverse_time_init"] : -5000],
                     height=ch_data["trigger"],
-                    distance=WINDOW_SETTINGS["window"],
+                    distance=WINDOW_SETTINGS["window_HFCT"],
                 )
 
             ch_data["main_peaks"].append(main_peaks + WINDOW_SETTINGS["main_time_init"])
@@ -224,6 +236,8 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
     ganancia = max(df["amplitude"]) / max(impulse_ave_final)
     impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
 
+    impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
+
     scatter_traces.append(
         go.Scatter(
             x=time1,
@@ -235,7 +249,4 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
         )
     )
 
-    time1 = np.linspace(time1[0], time1[-1], 10000)  # Nuevo eje temporal
-    impulse_ave_final = resample(impulse_ave_final, 10000)
-
-    return df, scatter_traces, impulse_ave_final, time1
+    return df, scatter_traces, impulse_ave_final

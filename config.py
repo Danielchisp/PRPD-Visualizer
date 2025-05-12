@@ -27,17 +27,25 @@ TRIGGER_SETTINGS = {
     "CH4": {"main": 0.01, "reverse": 100},
 }
 
-window = 2500
+window_antenna = 2500
+window_HFCT = 5000
+
+samplesToMicros = 5000
+
+impulseDownsample = 10000
 
 
 # Configuración de ventanas
 WINDOW_SETTINGS = {
-    "window": window,
-    "half_window": int(window / 2),
+    "window_antenna": window_antenna,
+    "window_HFCT": window_HFCT,
+    "half_window_antenna": int(window_antenna / 2),
+    "half_window_HFCT": int(window_HFCT / 2),
     "main_time_init": 1 * 5000,
     "main_time_fin": 40 * 5000,
     "reverse_time_init": 40 * 5000,
     "trigger_width": 1.5,
+    "fs": 5e9,
 }
 
 # Configuración de colores para los canales
@@ -49,6 +57,3 @@ CHANNEL_COLORS = {
 
 # Límites FFT
 FFT_LIMITS = {"CH2": 250e6, "CH3": 250e6, "CH4": 2000e6}
-
-# Frecuencia de muestreo
-FS = 5e9

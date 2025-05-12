@@ -1,8 +1,6 @@
 import numpy as np
 import plotly.graph_objects as go
 
-# from main_data import impulse_ave_final, time1
-
 
 import plotly.graph_objs as go
 
@@ -68,13 +66,93 @@ def plot_time_fft_multiple(selected_data):
         selected_data["W2"].tolist()
     )
 
-    fft_list = np.array(selected_data["fft_values"].tolist())
-    fft_promedio = np.mean(fft_list, axis=0) / max(abs(np.mean(fft_list, axis=0)))
-    fft_mas_distante = fft_list[
-        np.argmax(np.sum((fft_list - fft_promedio) ** 2, axis=1))
-    ]
-    fft_mas_distante /= max(abs(fft_mas_distante))
+    # Obtener las FFTs y sus tamaños
+    fft_values = selected_data["fft_values"].tolist()
+    fft_lengths = [len(fft) for fft in fft_values]
 
+    # Verificar si hay FFTs de tamaños distintos
+    unique_lengths = set(fft_lengths)
+
+    if len(unique_lengths) > 1:  # Si hay tamaños distintos
+        print("Warning: FFTs have different sizes. Plotting averages for each size.")
+
+        # Separar las FFTs por tamaño
+        fft_groups = {length: [] for length in unique_lengths}
+        for fft, length in zip(fft_values, fft_lengths):
+            fft_groups[length].append(fft)
+
+        # Calcular el promedio de cada grupo
+        fft_fig_data = []
+        for length, group in fft_groups.items():
+            fft_array = np.array(group)
+            fft_average = np.mean(fft_array, axis=0) / max(
+                abs(np.mean(fft_array, axis=0))
+            )
+            freqs = selected_data["freqs"].iloc[0][
+                : len(fft_average)
+            ]  # Ajustar frecuencias al tamaño
+            fft_fig_data.append(
+                go.Scatter(
+                    x=freqs,
+                    y=fft_average,
+                    mode="lines",
+                    name=f"Average FFT (Size {length})",
+                )
+            )
+
+        # Crear el gráfico de FFT con las curvas promedio
+        fft_fig = {
+            "data": fft_fig_data,
+            "layout": go.Layout(
+                title=dict(
+                    text="Frequency Resolved PD (Multiple Sizes)",
+                    font=dict(size=14),
+                ),
+                xaxis=dict(
+                    title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]
+                ),
+                yaxis=dict(title="(a.u)"),
+            ),
+        }
+    else:  # Si todas las FFTs tienen el mismo tamaño
+        fft_list = np.array(fft_values)
+        fft_promedio = np.mean(fft_list, axis=0) / max(abs(np.mean(fft_list, axis=0)))
+        fft_mas_distante = fft_list[
+            np.argmax(np.sum((fft_list - fft_promedio) ** 2, axis=1))
+        ]
+        fft_mas_distante /= max(abs(fft_mas_distante))
+
+        freqs = selected_data["freqs"].iloc[0]
+        fft_fig = {
+            "data": [
+                go.Scatter(
+                    x=freqs,
+                    y=fft_promedio,
+                    mode="lines",
+                    line=dict(color="red"),
+                    name="Average",
+                ),
+                go.Scatter(
+                    x=freqs,
+                    y=fft_mas_distante,
+                    mode="lines",
+                    line=dict(color="black", dash="dot"),
+                    name="Reference",
+                ),
+            ],
+            "layout": go.Layout(
+                title=dict(
+                    text="Frequency Resolved PD",
+                    font=dict(size=14),
+                ),
+                xaxis=dict(
+                    title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]
+                ),
+                yaxis=dict(title="(a.u)"),
+            ),
+        }
+
+    # Generar el gráfico de scatter (time_fig) siempre
     time_fig = {
         "data": [
             go.Scattergl(
@@ -98,38 +176,10 @@ def plot_time_fft_multiple(selected_data):
         "layout": go.Layout(
             title=dict(
                 text="Classification Map",
-                font=dict(size=16),  # Define el tamaño de la fuente aquí
+                font=dict(size=16),
             ),
             xaxis=dict(title="Time (s)"),
             yaxis=dict(title="Equivalent Frequency (Hz)"),
-        ),
-    }
-
-    freqs = selected_data["freqs"].iloc[0]
-    fft_fig = {
-        "data": [
-            go.Scatter(
-                x=freqs,
-                y=fft_promedio,
-                mode="lines",
-                line=dict(color="red"),
-                name="Average",
-            ),
-            go.Scatter(
-                x=freqs,
-                y=fft_mas_distante,
-                mode="lines",
-                line=dict(color="black", dash="dot"),
-                name="Reference",
-            ),
-        ],
-        "layout": go.Layout(
-            title=dict(
-                text="Frequency Resolved PD",
-                font=dict(size=14),  # Define el tamaño de la fuente aquí
-            ),
-            xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]),
-            yaxis=dict(title="(a.u)"),
         ),
     }
 
