@@ -3,8 +3,7 @@ from tkinter import *
 from tkinter import messagebox, simpledialog, ttk
 import matplotlib.pyplot as plt
 import os
-import threading
-from multiprocessing import Process
+from multiprocessing import Process, freeze_support
 
 
 from app import create_dash_app
@@ -528,4 +527,5 @@ def main():
 
 
 if __name__ == "__main__":
+    freeze_support()  # Para compatibilidad con Windows
     main()

@@ -9,11 +9,11 @@ def create_scatter_layout():
     return go.Layout(
         title="",
         xaxis=dict(
-            title=dict(text="X-Axis Label", font=dict(size=14)),
+            title=dict(text="Time (us)", font=dict(size=14)),
             tickfont=dict(size=12),
         ),
         yaxis=dict(
-            title=dict(text="Y-Axis Label", font=dict(size=14)),
+            title=dict(text="Voltage (V)", font=dict(size=14)),
             tickfont=dict(size=12),
         ),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),

@@ -89,16 +89,19 @@ def load_data(folder):
     ch1 = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Impulse"] + ".csv", header=None, skiprows=25
     )
+    print("CH1 loaded")
     ch2 = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Ferrite 1"] + ".csv", header=None, skiprows=25
     )
+    print("CH2 loaded")
     ch3 = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Ferrite 2"] + ".csv", header=None, skiprows=25
     )
+    print("CH3 loaded")
     ch4 = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Antenna"] + ".csv", header=None, skiprows=25
     )
-
+    print("CH4 loaded")
     finalTime = int(len(ch1) / 5000)
     time1 = np.linspace(0, finalTime, len(ch1))
     time2 = np.linspace(0, finalTime, len(ch2))

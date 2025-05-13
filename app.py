@@ -376,7 +376,7 @@ def create_dash_app(df, scatter_traces, time, impulse):
         # Handle zoom or relayout data
         if relayoutData and "xaxis.range[0]" in relayoutData:
             stored_layout = go.Layout(
-                title=dict(text="PRPD", font=dict(size=14)),
+                title=dict(text="Selected Signals from TF Map", font=dict(size=14)),
                 xaxis=dict(title="Time (us)"),
                 yaxis=dict(title="Voltage (V)"),
                 xaxis_range=[
@@ -392,7 +392,7 @@ def create_dash_app(df, scatter_traces, time, impulse):
         else:
             # Default layout
             stored_layout = go.Layout(
-                title=dict(text="PRPD", font=dict(size=14)),
+                title=dict(text="Selected Signals from TF Map", font=dict(size=14)),
                 xaxis=dict(title="Time (us)"),
                 yaxis=dict(title="Voltage (V)"),
                 uirevision=True,
