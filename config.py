@@ -29,9 +29,7 @@ TRIGGER_SETTINGS = {
 
 window_antenna = 2500
 window_HFCT = 5000
-
 samplesToMicros = 5000
-
 impulseDownsample = 10000
 
 
@@ -57,3 +55,6 @@ CHANNEL_COLORS = {
 
 # Límites FFT
 FFT_LIMITS = {"CH2": 250e6, "CH3": 250e6, "CH4": 2000e6}
+
+host = "127.0.0.1"  # Host address for the app
+port = 8002  # Port for the app

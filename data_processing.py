@@ -85,37 +85,8 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
     return signals_list
 
 
-def load_data(folder):
-    ch1 = pd.read_csv(
-        folder + "\\" + CHANNEL_DICT["Impulse"] + ".csv", header=None, skiprows=25
-    )
-    print("CH1 loaded")
-    ch2 = pd.read_csv(
-        folder + "\\" + CHANNEL_DICT["Ferrite 1"] + ".csv", header=None, skiprows=25
-    )
-    print("CH2 loaded")
-    ch3 = pd.read_csv(
-        folder + "\\" + CHANNEL_DICT["Ferrite 2"] + ".csv", header=None, skiprows=25
-    )
-    print("CH3 loaded")
-    ch4 = pd.read_csv(
-        folder + "\\" + CHANNEL_DICT["Antenna"] + ".csv", header=None, skiprows=25
-    )
-    print("CH4 loaded")
-    finalTime = int(len(ch1) / 5000)
-    time1 = np.linspace(0, finalTime, len(ch1))
-    time2 = np.linspace(0, finalTime, len(ch2))
-    time3 = np.linspace(0, finalTime, len(ch3))
-    time4 = np.linspace(0, finalTime, len(ch4))
+def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
 
-    print("Data loaded successfully.")
-
-    time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
-
-    return ch1, ch2, ch3, ch4, time1, time2, time3, time4
-
-
-def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
     impulsesNum = int(len(ch1.columns) / 2)
 
     mainDischargesCH2 = []
@@ -199,7 +170,14 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
 
     signals = []
     for ch_name, ch_cfg in CHANNELS.items():
+        status_label.config(text=f"Processing {ch_name.upper()}...")
+        status_label.update()
         signals += process_channel(ch_name, ch_cfg, impulsesNum)
+
+    status_label.config(
+        text="Processing completed. Generating scatter plot for all channels..."
+    )
+    status_label.update()
 
     df = pd.DataFrame(signals)
     df["id"] = range(len(df))
@@ -233,6 +211,11 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4):
                 name=group_name,
             )
         )
+
+    status_label.config(
+        text="Processing completed. Calculating average impulse response..."
+    )
+    status_label.update()
 
     impulses_list = [ch1[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]

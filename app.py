@@ -1,5 +1,3 @@
-# from main_data import df, scatter_traces  # Custom data and traces for plotting
-
 import dash
 import signal
 import os
@@ -23,7 +21,7 @@ import plotly.graph_objects as go  # Used for detailed graph customization
 dash_server_process = None
 
 
-def create_dash_app(df, scatter_traces, time, impulse):
+def create_dash_app(df, scatter_traces, time, impulse, host, port):
 
     global dash_server_process
 
@@ -450,8 +448,8 @@ def create_dash_app(df, scatter_traces, time, impulse):
                 return None
 
     # if __name__ == "__main__":
-    host = "127.0.0.1"  # Host address for the app
-    port = 8002  # Port for the app
+    # host = "127.0.0.1"  # Host address for the app
+    # port = 8002  # Port for the app
     print(f"Dash app is running on: http://{host}:{port}/")  # Print app URL
     app.run(
         debug=False, host=host, port=port, use_reloader=False

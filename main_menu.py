@@ -4,13 +4,22 @@ from tkinter import messagebox, simpledialog, ttk
 import matplotlib.pyplot as plt
 import os
 from multiprocessing import Process, freeze_support
-
-
 from app import create_dash_app
 from utils import get_input_parameters
-from data_processing import process_data, load_data
+from data_processing import process_data
+import psutil
+import pandas as pd
+import numpy as np
 
-from config import TRIGGER_SETTINGS, WINDOW_SETTINGS
+
+from config import (
+    TRIGGER_SETTINGS,
+    WINDOW_SETTINGS,
+    CHANNEL_DICT,
+    impulseDownsample,
+    host,
+    port,
+)
 
 df = None
 scatter_traces = None
@@ -20,6 +29,93 @@ dash_process = None
 root = None
 ch1, ch2, ch3, ch4 = None, None, None, None
 time1, time2, time3, time4 = None, None, None, None
+ram_label = None
+
+
+def load_data(folder):
+    global status_label, ram_label
+
+    status_label.config(
+        text="Loading CH1 data... This may take a while...",
+    )
+    status_label.update()
+    ch1 = pd.read_csv(
+        folder + "\\" + CHANNEL_DICT["Impulse"] + ".csv", header=None, skiprows=25
+    )
+    update_ram_display()
+    status_label.config(text="CH1 loaded")
+    status_label.update()
+
+    print("CH1 loaded")
+
+    status_label.config(
+        text="Loading CH2 data... This may take a while...",
+    )
+    status_label.update()
+    ch2 = pd.read_csv(
+        folder + "\\" + CHANNEL_DICT["Ferrite 1"] + ".csv", header=None, skiprows=25
+    )
+
+    update_ram_display()
+    status_label.config(text="CH2 loaded")
+    status_label.update()
+
+    print("CH2 loaded")
+    status_label.config(
+        text="Loading CH3 data... This may take a while...",
+    )
+    status_label.update()
+
+    ch3 = pd.read_csv(
+        folder + "\\" + CHANNEL_DICT["Ferrite 2"] + ".csv", header=None, skiprows=25
+    )
+
+    update_ram_display()
+    status_label.config(text="CH3 loaded")
+    status_label.update()
+
+    print("CH3 loaded")
+
+    status_label.config(
+        text="Loading CH4 data... This may take a while...",
+    )
+    status_label.update()
+    ch4 = pd.read_csv(
+        folder + "\\" + CHANNEL_DICT["Antenna"] + ".csv", header=None, skiprows=25
+    )
+
+    update_ram_display()
+    status_label.config(text="CH4 loaded")
+    status_label.update()
+
+    print("CH4 loaded")
+    finalTime = int(len(ch1) / 5000)
+    time1 = np.linspace(0, finalTime, len(ch1))
+    time2 = np.linspace(0, finalTime, len(ch2))
+    time3 = np.linspace(0, finalTime, len(ch3))
+    time4 = np.linspace(0, finalTime, len(ch4))
+
+    print("Data loaded successfully.")
+
+    time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
+
+    return ch1, ch2, ch3, ch4, time1, time2, time3, time4
+
+
+def get_ram_usage():
+    # Obtener el uso de memoria del proceso actual
+    process = psutil.Process(os.getpid())
+    ram_usage = process.memory_info().rss / (1024 * 1024)  # Convertir a MB
+    return ram_usage
+
+
+def update_ram_display():
+    ram_used = get_ram_usage()
+    if ram_used > 1000:
+        ram_label.config(text=f"RAM Usage: {ram_used / 1024:.2f} GB")
+    else:
+        ram_label.config(text=f"RAM Usage: {ram_used:.2f} MB")
+    root.after(1000, update_ram_display)  # Update every second
 
 
 def adjust_trigger_interface(x, y, color):
@@ -27,10 +123,11 @@ def adjust_trigger_interface(x, y, color):
     fig.canvas.manager.window.attributes(
         "-topmost", 1
     )  # Asegurar que la ventana esté en primer plano
-    fig.canvas.manager.full_screen_toggle()  # Activar pantalla completa
+    # fig.canvas.manager.full_screen_toggle()  # Activar pantalla completa
     ax.plot(x, y, color=color)
     ax.set_title(
-        "Drag the horizontal line to adjust the trigger. When done, press Enter."
+        "Drag the red line to set the trigger level.\n"
+        f"WARNING! Ensure all items in the palette are deselected before moving the line. When done, press Enter."
     )
 
     # Crear línea horizontal inicial en y=0
@@ -107,7 +204,7 @@ def load_app_data():
     global ch1, ch2, ch3, ch4, time1, time2, time3, time4
 
     status_label.config(
-        text="Searching for Measurement Folder \nCH1.csv - CH2.csv - CH3.csv - CH4.csv",
+        text="Searching for Measurement Folder. All these files are required | CH1.csv - CH2.csv - CH3.csv - CH4.csv",
     )
     status_label.update()
 
@@ -116,18 +213,18 @@ def load_app_data():
         messagebox.showerror("Error", "No folder selected.")
         return
 
-    status_label.config(text="Folder found!\nLoading data, this can take a while...")
+    status_label.config(text="Folder found! Loading data, this can take a while...")
     status_label.update()
 
     ch1, ch2, ch3, ch4, time1, time2, time3, time4 = load_data(folder)
 
     status_label.config(
-        text="Data loaded successfully!\nNow you can set the trigger levels.",
+        text="Data loaded successfully! Now you can set the trigger levels.",
     )
     status_label.update()
 
     folder_label.config(
-        text=f"Folder Selected:\n{os.path.basename(folder)}",
+        text=f"Folder Selected: {os.path.basename(folder)}",
         foreground="green",
     )
     folder_label.update()
@@ -143,11 +240,14 @@ def trigger_detection():
     while triggerSettingLoop == False:
         messagebox.showinfo(
             "Process Notification",
-            "The peak detection trigger adjustment process will now begin. A graph will be displayed for the selected signal.",
+            f"The peak detection trigger adjustment process will now begin. A graph will open for each channel.\n"
+            f"Drag the red line to set the trigger level.\n\n"
+            f"WARNING! Ensure all items in the palette are deselected before moving the line.\n\n"
+            f"Press Enter to confirm the value.",
         )
 
         status_label.config(
-            text="Peak Detection Trigger Adjustment\nSelect the signal to adjust"
+            text="Peak Detection Trigger Adjustment Select the signal to adjust"
         )
 
         status_label.update()
@@ -168,32 +268,55 @@ def trigger_detection():
         signalCH3 = ch3[signalNum]
         signalCH4 = ch4[signalNum]
 
+        status_label.config(
+            text=f"Adjusting Channel 2 trigger level. Drag the red line to set the trigger level.\n"
+            f"WARNING! Ensure all items in the palette are deselected before moving the line."
+        )
+        status_label.update()
         TRIGGER_SETTINGS["CH2"]["main"] = adjust_trigger_interface(
             time2, signalCH2, "blue"
         )
         print(f"CH2 main trigger: {TRIGGER_SETTINGS['CH2']['main']} V")
+
+        status_label.config(
+            text=f"Adjusting Channel 3 trigger level. Drag the red line to set the trigger level.\n"
+            f"WARNING! Ensure all items in the palette are deselected before moving the line."
+        )
+        status_label.update()
+
         TRIGGER_SETTINGS["CH3"]["reverse"] = adjust_trigger_interface(
             time3, signalCH3, "green"
         )
         print(f"CH3 reverse trigger: {TRIGGER_SETTINGS['CH3']['reverse']} V")
+
+        status_label.config(
+            text=f"Adjusting Channel 4 trigger level. Drag the red line to set the trigger level.\n"
+            f"WARNING! Ensure all items in the palette are deselected before moving the line."
+        )
+        status_label.update()
+
         TRIGGER_SETTINGS["CH4"]["main"] = adjust_trigger_interface(
-            time4, signalCH4, "red"
+            time4, signalCH4, "black"
         )
         print(f"CH4 main trigger: {TRIGGER_SETTINGS['CH4']['main']} V")
 
         response = messagebox.askokcancel(
-            "Trigger Adjustment Confirmation",
-            "Do you want to confirm the trigger adjustments?",
+            "The trigger levels are the following:",
+            f"CH2 Main: {round(TRIGGER_SETTINGS['CH2']['main']*1000, 2)} mV\n"
+            f"CH3 Reverse: {round(TRIGGER_SETTINGS['CH3']['reverse']*1000, 2)} mV\n"
+            f"CH4 Main: {round(TRIGGER_SETTINGS['CH4']['main']*1000, 2)} mV\n\n"
+            f"Do you want to proceed?\n"
+            f"Press cancel to adjust again.",
+            icon="info",
         )
         triggerSettingLoop = response
 
     update_trigger_labels()
 
     status_label.config(
-        text="Trigger levels adjusted successfully!\nNow you can process the data."
+        text="Trigger levels adjusted successfully! Now you can process the data."
     )
-
-    # Confirmación para habilitar el visor web
+    status_label.update()
 
 
 def process_data_GUI():
@@ -201,31 +324,30 @@ def process_data_GUI():
     global ch1, ch2, ch3, ch4, time1, time2, time3, time4
 
     status_label.config(
-        text="Processing data...\nThis may take a few seconds.",
+        text="Processing data... This may take a few seconds.",
     )
     status_label.update()
 
     # Recoger los valores de los Spinbox
     get_spinbox_values()
 
-    print("Window settings:", WINDOW_SETTINGS)
+    print("The following parameters have been set:")
+    print(f"Window Antenna: {WINDOW_SETTINGS['window_antenna']} ns")
+    print(f"Window HFCT: {WINDOW_SETTINGS['window_HFCT']} ns")
+    print(f"Sampling Frequency: {WINDOW_SETTINGS['fs']} GHz")
+    print(f"Main PD Time Init: {WINDOW_SETTINGS['main_time_init']} ns")
+    print(f"Main PD Time End: {WINDOW_SETTINGS['main_time_fin']} ns")
+    print(f"Reverse PD Time Init: {WINDOW_SETTINGS['reverse_time_init']} ns")
 
     # Procesar los datos
     df, scatter_traces, impulse_ave_final = process_data(
-        ch1,
-        ch2,
-        ch3,
-        ch4,
-        time1,
-        time2,
-        time3,
-        time4,
+        ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label
     )
 
     print("Data processed successfully!")
     # Actualizar la etiqueta de estado
     status_label.config(
-        text="Metadata calculated successfully!\nNow you can visualize the data."
+        text="Metadata calculated successfully! Now you can visualize the data."
     )
     status_label.update()
     toggle_visualize_button(True)
@@ -240,14 +362,14 @@ def toggle_visualize_button(state):
 
 def run_dash_app(df, scatter_traces, time1, impulse_ave_final):
 
-    create_dash_app(df, scatter_traces, time1, impulse_ave_final)
+    create_dash_app(df, scatter_traces, time1, impulse_ave_final, host, port)
 
 
 def visualize_data():
     global df, scatter_traces, time1, impulse_ave_final, dash_process, status_label
 
     status_label.config(
-        text="Starting visualization...\nThis may take a few seconds.",
+        text="Starting visualization... This may take a few seconds.",
     )
 
     status_label.update()
@@ -265,6 +387,14 @@ def visualize_data():
 
     status_label.config(text="Visualizing data...")
     status_label.update()
+
+    # Create a clickable hyperlink in the status label using host and port
+    status_label.config(
+        text=f"Visualizing data... Click here to open: http://{host}:{port}",
+        foreground="blue",
+        cursor="hand2",
+    )
+    status_label.bind("<Button-1>", lambda e: os.system(f"start http://{host}:{port}"))
 
 
 def get_spinbox_values():
@@ -289,6 +419,7 @@ def setup_gui():
     global labelCH2Main, labelCH2Reverse, labelCH3Main, labelCH3Reverse, labelCH4Main, labelCH4Reverse
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
     global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit
+    global ram_label
 
     root = tk.Tk()
     root.title("Main Menu")
@@ -361,11 +492,21 @@ def setup_gui():
     exit_btn.bind("<Leave>", lambda e: exit_btn.config(cursor=""))
 
     # Etiqueta de estado
-    status_label = ttk.Label(columna1, text="No data loaded")
-    status_label.pack(pady=10)
+    status_label = ttk.Label(
+        main_frame, text="No data loaded", anchor="w", padding="10"
+    )
+    status_label.grid(row=1, column=0, columnspan=4, pady=10, sticky="ew")
 
     folder_label = ttk.Label(columna1, text="No Folder Selected", foreground="red")
     folder_label.pack(pady=10)
+
+    ram_label = ttk.Label(
+        columna1, text="RAM Usage: 0.00 MB", font=("Arial", 8, "bold"), anchor="center"
+    )
+    ram_label.pack(pady=0)
+
+    # Iniciar la actualización periódica
+    update_ram_display()
 
     columna2 = ttk.Frame(main_frame, padding="5")
     columna2.grid(row=0, column=1, sticky="nsew")
@@ -463,6 +604,8 @@ def setup_gui():
     )
     labelCH4Reverse.pack(fill=tk.X, pady=5)
 
+    ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
+
     columna4 = ttk.Frame(main_frame, padding="5")
     columna4.grid(row=0, column=3, sticky="nsew")
 
@@ -496,11 +639,6 @@ def setup_gui():
     return root
 
 
-def stop_dash():
-    """Detiene la aplicación Dash"""
-    os._exit(0)
-
-
 def check_dash_process():
     """Verifica si el hilo de Dash sigue activo"""
     global dash_process
@@ -522,10 +660,11 @@ def exit_app():
 
 def main():
     """Función principal"""
+    freeze_support()
     window = setup_gui()
     window.mainloop()
 
 
 if __name__ == "__main__":
-    freeze_support()  # Para compatibilidad con Windows
+    # Para compatibilidad con Windows
     main()
