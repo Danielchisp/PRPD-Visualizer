@@ -210,7 +210,12 @@ def load_app_data():
 
     folder = get_input_parameters()
     if folder is None:
+
         messagebox.showerror("Error", "No folder selected.")
+        status_label.config(
+            text="No folder selected. In order to load the data, you need to select a folder.",
+        )
+        status_label.update()
         return
 
     status_label.config(text="Folder found! Loading data, this can take a while...")
@@ -391,7 +396,7 @@ def visualize_data():
     # Create a clickable hyperlink in the status label using host and port
     status_label.config(
         text=f"Visualizing data... Click here to open: http://{host}:{port}",
-        foreground="blue",
+        foreground="black",
         cursor="hand2",
     )
     status_label.bind("<Button-1>", lambda e: os.system(f"start http://{host}:{port}"))
