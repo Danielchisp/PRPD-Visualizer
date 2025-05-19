@@ -22,9 +22,9 @@ CHANNEL_DICT = {
 
 # Configuración de triggers
 TRIGGER_SETTINGS = {
-    "CH2": {"main": 0.02, "reverse": 100},
-    "CH3": {"main": 100, "reverse": 0.002},
-    "CH4": {"main": 0.01, "reverse": 100},
+    "mainHFCT": {"main": 0.02, "reverse": 100},
+    "reverseHFCT": {"main": 100, "reverse": 0.002},
+    "antenna": {"main": 0.01, "reverse": 100},
 }
 
 window_antenna = 2500

@@ -10,6 +10,7 @@ from data_processing import process_data
 import psutil
 import pandas as pd
 import numpy as np
+import sys
 
 
 from config import (
@@ -27,7 +28,12 @@ impulse_ave_final = None
 time1 = None
 dash_process = None
 root = None
-ch1, ch2, ch3, ch4 = None, None, None, None
+impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData = (
+    None,
+    None,
+    None,
+    None,
+)
 time1, time2, time3, time4 = None, None, None, None
 ram_label = None
 
@@ -39,7 +45,7 @@ def load_data(folder):
         text="Loading CH1 data... This may take a while...",
     )
     status_label.update()
-    ch1 = pd.read_csv(
+    impulseMainData = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Impulse"] + ".csv", header=None, skiprows=25
     )
     update_ram_display()
@@ -52,7 +58,7 @@ def load_data(folder):
         text="Loading CH2 data... This may take a while...",
     )
     status_label.update()
-    ch2 = pd.read_csv(
+    mainHFCTMainData = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Ferrite 1"] + ".csv", header=None, skiprows=25
     )
 
@@ -66,7 +72,7 @@ def load_data(folder):
     )
     status_label.update()
 
-    ch3 = pd.read_csv(
+    reverseHFCTMainData = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Ferrite 2"] + ".csv", header=None, skiprows=25
     )
 
@@ -80,7 +86,7 @@ def load_data(folder):
         text="Loading CH4 data... This may take a while...",
     )
     status_label.update()
-    ch4 = pd.read_csv(
+    antennaMainData = pd.read_csv(
         folder + "\\" + CHANNEL_DICT["Antenna"] + ".csv", header=None, skiprows=25
     )
 
@@ -89,17 +95,26 @@ def load_data(folder):
     status_label.update()
 
     print("CH4 loaded")
-    finalTime = int(len(ch1) / 5000)
-    time1 = np.linspace(0, finalTime, len(ch1))
-    time2 = np.linspace(0, finalTime, len(ch2))
-    time3 = np.linspace(0, finalTime, len(ch3))
-    time4 = np.linspace(0, finalTime, len(ch4))
+    finalTime = int(len(impulseMainData) / 5000)
+    time1 = np.linspace(0, finalTime, len(impulseMainData))
+    time2 = np.linspace(0, finalTime, len(mainHFCTMainData))
+    time3 = np.linspace(0, finalTime, len(reverseHFCTMainData))
+    time4 = np.linspace(0, finalTime, len(antennaMainData))
 
     print("Data loaded successfully.")
 
     time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
 
-    return ch1, ch2, ch3, ch4, time1, time2, time3, time4
+    return (
+        impulseMainData,
+        mainHFCTMainData,
+        reverseHFCTMainData,
+        antennaMainData,
+        time1,
+        time2,
+        time3,
+        time4,
+    )
 
 
 def get_ram_usage():
@@ -180,28 +195,34 @@ def adjust_trigger_interface(x, y, color):
 def update_trigger_labels():
     """Actualiza las etiquetas de los triggers en la GUI"""
     labelCH2Main.config(
-        text=f"{round(TRIGGER_SETTINGS['CH2']['main']*1000,2)} mV (Main)"
+        text=f"{round(TRIGGER_SETTINGS['mainHFCT']['main']*1000,2)} mV (Main)"
     )
     labelCH2Reverse.config(
-        text=f"{round(TRIGGER_SETTINGS['CH2']['reverse']*1000,2)} mV (Rev)"
+        text=f"{round(TRIGGER_SETTINGS['mainHFCT']['reverse']*1000,2)} mV (Rev)"
     )
     labelCH3Main.config(
-        text=f"{round(TRIGGER_SETTINGS['CH3']['main']*1000,2)} mV (Main)"
+        text=f"{round(TRIGGER_SETTINGS['reverseHFCT']['main']*1000,2)} mV (Main)"
     )
     labelCH3Reverse.config(
-        text=f"{round(TRIGGER_SETTINGS['CH3']['reverse']*1000,2)} mV (Rev)"
+        text=f"{round(TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000,2)} mV (Rev)"
     )
     labelCH4Main.config(
-        text=f"{round(TRIGGER_SETTINGS['CH4']['main']*1000,2)} mV (Main)"
+        text=f"{round(TRIGGER_SETTINGS['antenna']['main']*1000,2)} mV (Main)"
     )
     labelCH4Reverse.config(
-        text=f"{round(TRIGGER_SETTINGS['CH4']['reverse']*1000,2)} mV (Rev)"
+        text=f"{round(TRIGGER_SETTINGS['antenna']['reverse']*1000,2)} mV (Rev)"
     )
 
 
 def load_app_data():
-    global df, scatter_traces, impulse_ave_final, time1, status_label, folder_label
-    global ch1, ch2, ch3, ch4, time1, time2, time3, time4
+    global df, scatter_traces, impulse_ave_final, time1, status_label, folder_label, CHANNEL_DICT
+    global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
+    global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
+
+    CHANNEL_DICT["Impulse"] = comboImpulse.get()
+    CHANNEL_DICT["Ferrite 1"] = comboHFCTMain.get()
+    CHANNEL_DICT["Ferrite 2"] = comboHFCTReverse.get()
+    CHANNEL_DICT["Antenna"] = comboAntenna.get()
 
     status_label.config(
         text="Searching for Measurement Folder. All these files are required | CH1.csv - CH2.csv - CH3.csv - CH4.csv",
@@ -221,7 +242,16 @@ def load_app_data():
     status_label.config(text="Folder found! Loading data, this can take a while...")
     status_label.update()
 
-    ch1, ch2, ch3, ch4, time1, time2, time3, time4 = load_data(folder)
+    (
+        impulseMainData,
+        mainHFCTMainData,
+        reverseHFCTMainData,
+        antennaMainData,
+        time1,
+        time2,
+        time3,
+        time4,
+    ) = load_data(folder)
 
     status_label.config(
         text="Data loaded successfully! Now you can set the trigger levels.",
@@ -236,9 +266,9 @@ def load_app_data():
 
 
 def trigger_detection():
-    global ch1, ch2, ch3, ch4, time1, time2, time3, time4
+    global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global TRIGGER_SETTINGS, status_label
-    IMPULSES_NUM = int(len(ch1.columns) / 2)
+    IMPULSES_NUM = int(len(impulseMainData.columns) / 2)
 
     triggerSettingLoop = False
 
@@ -269,19 +299,19 @@ def trigger_detection():
 
         signalNum = 2 * signalPicked + 1
 
-        signalCH2 = ch2[signalNum]
-        signalCH3 = ch3[signalNum]
-        signalCH4 = ch4[signalNum]
+        signalCH2 = mainHFCTMainData[signalNum]
+        signalCH3 = reverseHFCTMainData[signalNum]
+        signalCH4 = antennaMainData[signalNum]
 
         status_label.config(
             text=f"Adjusting Channel 2 trigger level. Drag the red line to set the trigger level.\n"
             f"WARNING! Ensure all items in the palette are deselected before moving the line."
         )
         status_label.update()
-        TRIGGER_SETTINGS["CH2"]["main"] = adjust_trigger_interface(
+        TRIGGER_SETTINGS["mainHFCT"]["main"] = adjust_trigger_interface(
             time2, signalCH2, "blue"
         )
-        print(f"CH2 main trigger: {TRIGGER_SETTINGS['CH2']['main']} V")
+        print(f"CH2 main trigger: {TRIGGER_SETTINGS['mainHFCT']['main']} V")
 
         status_label.config(
             text=f"Adjusting Channel 3 trigger level. Drag the red line to set the trigger level.\n"
@@ -289,10 +319,10 @@ def trigger_detection():
         )
         status_label.update()
 
-        TRIGGER_SETTINGS["CH3"]["reverse"] = adjust_trigger_interface(
+        TRIGGER_SETTINGS["reverseHFCT"]["reverse"] = adjust_trigger_interface(
             time3, signalCH3, "green"
         )
-        print(f"CH3 reverse trigger: {TRIGGER_SETTINGS['CH3']['reverse']} V")
+        print(f"CH3 reverse trigger: {TRIGGER_SETTINGS['reverseHFCT']['reverse']} V")
 
         status_label.config(
             text=f"Adjusting Channel 4 trigger level. Drag the red line to set the trigger level.\n"
@@ -300,16 +330,16 @@ def trigger_detection():
         )
         status_label.update()
 
-        TRIGGER_SETTINGS["CH4"]["main"] = adjust_trigger_interface(
+        TRIGGER_SETTINGS["antenna"]["main"] = adjust_trigger_interface(
             time4, signalCH4, "black"
         )
-        print(f"CH4 main trigger: {TRIGGER_SETTINGS['CH4']['main']} V")
+        print(f"CH4 main trigger: {TRIGGER_SETTINGS['antenna']['main']} V")
 
         response = messagebox.askokcancel(
             "The trigger levels are the following:",
-            f"CH2 Main: {round(TRIGGER_SETTINGS['CH2']['main']*1000, 2)} mV\n"
-            f"CH3 Reverse: {round(TRIGGER_SETTINGS['CH3']['reverse']*1000, 2)} mV\n"
-            f"CH4 Main: {round(TRIGGER_SETTINGS['CH4']['main']*1000, 2)} mV\n\n"
+            f"CH2 Main: {round(TRIGGER_SETTINGS['mainHFCT']['main']*1000, 2)} mV\n"
+            f"CH3 Reverse: {round(TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000, 2)} mV\n"
+            f"CH4 Main: {round(TRIGGER_SETTINGS['antenna']['main']*1000, 2)} mV\n\n"
             f"Do you want to proceed?\n"
             f"Press cancel to adjust again.",
             icon="info",
@@ -326,7 +356,7 @@ def trigger_detection():
 
 def process_data_GUI():
     global df, scatter_traces, impulse_ave_final, time1, status_label
-    global ch1, ch2, ch3, ch4, time1, time2, time3, time4
+    global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
 
     status_label.config(
         text="Processing data... This may take a few seconds.",
@@ -346,7 +376,15 @@ def process_data_GUI():
 
     # Procesar los datos
     df, scatter_traces, impulse_ave_final = process_data(
-        ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label
+        impulseMainData,
+        mainHFCTMainData,
+        reverseHFCTMainData,
+        antennaMainData,
+        time1,
+        time2,
+        time3,
+        time4,
+        status_label,
     )
 
     print("Data processed successfully!")
@@ -425,11 +463,28 @@ def setup_gui():
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
     global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit
     global ram_label
+    global comboAntenna, comboHFCTMain, comboHFCTReverse, comboImpulse
+    global logo_img  # Para evitar que el recolector de basura elimine la imagen
 
     root = tk.Tk()
-    root.title("Main Menu")
+    root.title("TRPD Analyzer & Viewer")
     root.geometry("800x400")  # Ajustar el tamaño de la ventana
     root.resizable(False, False)
+
+    # Cargar y asignar el ícono de la aplicación
+
+    if getattr(sys, "frozen", False):
+        # Si está congelado por PyInstaller
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    logo_path = os.path.join(base_path, "assets", "logo.png")
+    try:
+        logo_img = tk.PhotoImage(file=logo_path)
+        root.iconphoto(False, logo_img)
+    except Exception as e:
+        print(f"No se pudo cargar el logo: {e}")
+        logo_img = None
 
     # Marco principal
     main_frame = ttk.Frame(root)
@@ -439,9 +494,7 @@ def setup_gui():
     columna1.grid(row=0, column=0, sticky="nsew")
 
     # Título
-    ttk.Label(columna1, text="TRPD Analyzer & Viewer", font=("Arial", 10, "bold")).pack(
-        pady=5
-    )
+    ttk.Label(columna1, text="Main Menu", font=("Arial", 10, "bold")).pack(pady=5)
 
     # Botones
     load_data_btn = ttk.Button(
@@ -557,28 +610,30 @@ def setup_gui():
         pady=5
     )
 
-    ttk.Label(columna3, text="CH2", font=("Arial", 10, "bold")).pack(anchor="w")
+    ttk.Label(columna3, text="Main HFCT", font=("Arial", 10, "bold")).pack(anchor="w")
     labelCH2Main = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH2']['main']*1000} mV (Main)",
+        text=f"{TRIGGER_SETTINGS['mainHFCT']['main']*1000} mV (Main)",
         font=("Arial", 10),
     )
     labelCH2Main.pack(fill=tk.X, pady=5)
 
     labelCH2Reverse = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH2']['reverse']*1000} mV (Rev)",
+        text=f"{TRIGGER_SETTINGS['mainHFCT']['reverse']*1000} mV (Rev)",
         font=("Arial", 10),
     )
     labelCH2Reverse.pack(fill=tk.X, pady=5)
 
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
-    ttk.Label(columna3, text="CH3", font=("Arial", 10, "bold")).pack(anchor="w")
+    ttk.Label(columna3, text="Reverse HFCT", font=("Arial", 10, "bold")).pack(
+        anchor="w"
+    )
 
     labelCH3Main = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH3']['main']*1000} mV (Main)",
+        text=f"{TRIGGER_SETTINGS['reverseHFCT']['main']*1000} mV (Main)",
         font=("Arial", 10),
     )
     labelCH3Main.pack(fill=tk.X, pady=5)
@@ -586,25 +641,25 @@ def setup_gui():
 
     labelCH3Reverse = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH3']['reverse']*1000} mV (Rev)",
+        text=f"{TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000} mV (Rev)",
         font=("Arial", 10),
     )
     labelCH3Reverse.pack(fill=tk.X, pady=5)
 
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
-    ttk.Label(columna3, text="CH4", font=("Arial", 10, "bold")).pack(anchor="w")
+    ttk.Label(columna3, text="Antenna", font=("Arial", 10, "bold")).pack(anchor="w")
 
     labelCH4Main = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH4']['main']*1000} mV (Main)",
+        text=f"{TRIGGER_SETTINGS['antenna']['main']*1000} mV (Main)",
         font=("Arial", 10),
     )
     labelCH4Main.pack(fill=tk.X, pady=5)
 
     labelCH4Reverse = ttk.Label(
         columna3,
-        text=f"{TRIGGER_SETTINGS['CH4']['reverse']*1000} mV (Reverse)",
+        text=f"{TRIGGER_SETTINGS['antenna']['reverse']*1000} mV (Reverse)",
         font=("Arial", 10),
     )
     labelCH4Reverse.pack(fill=tk.X, pady=5)
@@ -620,26 +675,26 @@ def setup_gui():
 
     ttk.Label(columna4, text="Impulse").pack(anchor="w")
 
-    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    combo.pack(fill=tk.X, pady=5)
-    combo.set("CH1")
+    comboImpulse = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    comboImpulse.pack(fill=tk.X, pady=5)
+    comboImpulse.set("CH1")
 
     ttk.Label(columna4, text="Main HFCT").pack(anchor="w")
 
-    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    combo.pack(fill=tk.X, pady=5)
-    combo.set("CH2")
+    comboHFCTMain = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    comboHFCTMain.pack(fill=tk.X, pady=5)
+    comboHFCTMain.set("CH2")
 
     ttk.Label(columna4, text="Reverse HFCT").pack(anchor="w")
 
-    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    combo.pack(fill=tk.X, pady=5)
-    combo.set("CH3")
+    comboHFCTReverse = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    comboHFCTReverse.pack(fill=tk.X, pady=5)
+    comboHFCTReverse.set("CH3")
 
     ttk.Label(columna4, text="Antenna").pack(anchor="w")
-    combo = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    combo.pack(fill=tk.X, pady=5)
-    combo.set("CH4")
+    comboAntenna = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
+    comboAntenna.pack(fill=tk.X, pady=5)
+    comboAntenna.set("CH4")
 
     return root
 

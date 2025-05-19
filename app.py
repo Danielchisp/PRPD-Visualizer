@@ -1,5 +1,7 @@
 import dash
 import signal
+import pandas as pd
+import numpy as np
 import os
 from dash import dcc, html  # Dash components for creating the layout
 from dash.dependencies import (
@@ -46,7 +48,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                 [
                                     # Main title of the application
                                     html.H1(
-                                        "TRPD Interactive Interface",
+                                        "TRPD Analysys Interface",
                                         style={
                                             "textAlign": "left",
                                             "fontFamily": "Roboto, sans-serif",
@@ -135,15 +137,15 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                         },
                                                     ),
                                                     dcc.Download(id="download-data-2"),
-                                                    html.Button(
-                                                        "Not assigned",
-                                                        id="button-3",
-                                                        style={
-                                                            "margin-left": "20px",
-                                                            "cursor": "pointer",
-                                                        },
-                                                    ),
-                                                    dcc.Download(id="download-data-3"),
+                                                    # html.Button(
+                                                    #     "Not assigned",
+                                                    #     id="button-3",
+                                                    #     style={
+                                                    #         "margin-left": "20px",
+                                                    #         "cursor": "pointer",
+                                                    #     },
+                                                    # ),
+                                                    # dcc.Download(id="download-data-3"),
                                                 ],
                                                 style={
                                                     "marginBottom": "20px",
@@ -234,7 +236,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                             html.Div(
                                                                 [
                                                                     dcc.Graph(
-                                                                        id="time-series",
+                                                                        id="upper-right-graph",
                                                                         figure={
                                                                             "data": [],
                                                                             "layout": [],
@@ -264,7 +266,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                             html.Div(
                                                                 [
                                                                     dcc.Graph(
-                                                                        id="fft-plot",
+                                                                        id="lower-right-graph",
                                                                         figure={
                                                                             "data": [],
                                                                             "layout": [],
@@ -322,7 +324,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
 
     # Callback for updating time-series and FFT plots
     @app.callback(
-        [Output("time-series", "figure"), Output("fft-plot", "figure")],
+        [Output("upper-right-graph", "figure"), Output("lower-right-graph", "figure")],
         [Input("scatter-plot", "clickData"), Input("scatter-plot", "selectedData")],
     )
     def update_plots(clickData, selectedData):
@@ -363,8 +365,8 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
     # Callback for updating the scatter plot based on time-series interaction
     @app.callback(
         Output("scatter-plot-selected", "figure"),
-        Input("time-series", "clickData"),
-        Input("time-series", "selectedData"),
+        Input("upper-right-graph", "clickData"),
+        Input("upper-right-graph", "selectedData"),
         State("scatter-plot-selected", "relayoutData"),
     )
     def update_scatter_plot_selected(clickData, selectedData, relayoutData):
@@ -443,13 +445,65 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][3] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-                return dcc.send_data_frame(filtered_df.to_csv, "selected_data.csv")
+                
+                # Suponiendo que cada valor en 'signal' es una Serie o array
+                signals_raw = filtered_df['signal'].tolist()
+
+                # Convertimos todos a np.arrays limpios, sin índice
+                signals_clean = [np.array(s) for s in signals_raw]
+
+                # Creamos un DataFrame a partir de listas
+                outputDF = pd.DataFrame(signals_clean).T  # Transponemos para que cada columna sea una señal
+
+                # Renombramos columnas
+                outputDF.columns = [f'ID: ' + str(i) for i in scatterSelectedIds]
+
+                # Exportamos CSV
+                return dcc.send_data_frame(outputDF.to_csv, "TRPD_graph_selected_data.csv", index=False)
+
+
+            else:
+                return None
+            
+    @app.callback(
+        Output("download-data-2", "data"),
+        Input("button-2", "n_clicks"),
+        State("upper-right-graph", "selectedData"),
+    )
+    
+    def download_selected_data_TF_Map(button2, scatterSelectedData):
+        if button2:
+            if scatterSelectedData:
+                scatterSelectedIds = [
+                    point["customdata"][0] for point in scatterSelectedData["points"]
+                ]
+                filtered_df = df[df["id"].isin(scatterSelectedIds)]
+                
+                # Suponiendo que cada valor en 'signal' es una Serie o array
+                signals_raw = filtered_df['signal'].tolist()
+
+                # Convertimos todos a np.arrays limpios, sin índice
+                signals_clean = [np.array(s) for s in signals_raw]
+
+                # Creamos un DataFrame a partir de listas
+                outputDF = pd.DataFrame(signals_clean).T  # Transponemos para que cada columna sea una señal
+
+                # Renombramos columnas
+                outputDF.columns = [f'ID: ' + str(i) for i in scatterSelectedIds]
+
+                # Exportamos CSV
+                return dcc.send_data_frame(outputDF.to_csv, "TF_Map_selected_data.csv", index=False)
+
+
             else:
                 return None
 
-    # if __name__ == "__main__":
-    # host = "127.0.0.1"  # Host address for the app
-    # port = 8002  # Port for the app
+
+            
+
+    # This block is not necessary if the Dash app is being run as a subprocess
+    # from a main application like Tkinter. Instead, ensure the `create_dash_app`
+    # function is called with the appropriate parameters from the main application.
     print(f"Dash app is running on: http://{host}:{port}/")  # Print app URL
     app.run(
         debug=False, host=host, port=port, use_reloader=False

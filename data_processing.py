@@ -37,8 +37,8 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
         signal = channel_cfg["signal"][signal_num]
 
         for discharge_type, peaks in [
-            ("Main", channel_cfg["main_peaks"][i]),
-            ("Reverse", channel_cfg["reverse_peaks"][i]),
+            ("Rise", channel_cfg["main_peaks"][i]),
+            ("Tail", channel_cfg["reverse_peaks"][i]),
         ]:
             for peak_idx in peaks:
 
@@ -77,6 +77,7 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                         "t0": t0,
                         "T2": T2,
                         "W2": W2,
+                        "impulseNum": i
                     }
                 )
 
@@ -85,9 +86,9 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
     return signals_list
 
 
-def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
+def process_data(impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4, status_label):
 
-    impulsesNum = int(len(ch1.columns) / 2)
+    impulsesNum = int(len(impulseMainData.columns) / 2)
 
     mainDischargesCH2 = []
     mainDischargesCH3 = []
@@ -97,30 +98,30 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
     reverseDischargesCH4 = []
 
     CHANNELS = {
-        "CH2": {
-            "signal": ch2,
+        "Main HFCT": {
+            "signal": mainHFCTMainData,
             "time": time2,
             "main_peaks": mainDischargesCH2,
             "reverse_peaks": reverseDischargesCH2,
-            "trigger": TRIGGER_SETTINGS["CH2"]["main"],
+            "trigger": TRIGGER_SETTINGS["mainHFCT"]["main"],
             "fft_lim": FFT_LIMITS["CH2"],
             "color": CHANNEL_COLORS["CH2"],
         },
-        "CH3": {
-            "signal": ch3,
+        "Reverse HFCT": {
+            "signal": reverseHFCTMainData,
             "time": time3,
             "main_peaks": mainDischargesCH3,
             "reverse_peaks": reverseDischargesCH3,
-            "trigger": TRIGGER_SETTINGS["CH3"]["reverse"],
+            "trigger": TRIGGER_SETTINGS["reverseHFCT"]["reverse"],
             "fft_lim": FFT_LIMITS["CH3"],
             "color": CHANNEL_COLORS["CH3"],
         },
-        "CH4": {
-            "signal": ch4,
+        "Antenna": {
+            "signal": antennaMainData,
             "time": time4,
             "main_peaks": mainDischargesCH4,
             "reverse_peaks": reverseDischargesCH4,
-            "trigger": TRIGGER_SETTINGS["CH4"]["main"],
+            "trigger": TRIGGER_SETTINGS["antenna"]["main"],
             "fft_lim": FFT_LIMITS["CH4"],
             "color": CHANNEL_COLORS["CH4"],
         },
@@ -169,9 +170,11 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
             )
 
     signals = []
+    
     for ch_name, ch_cfg in CHANNELS.items():
         status_label.config(text=f"Processing {ch_name.upper()}...")
         status_label.update()
+        
         signals += process_channel(ch_name, ch_cfg, impulsesNum)
 
     status_label.config(
@@ -200,12 +203,14 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
                         group_data["type"],
                         group_data["channel"],
                         group_data["id"],
+                        group_data["impulseNum"],
                     ),
                     axis=-1,
                 ),
                 hovertemplate="<b>Time:</b> %{customdata[0]:.2f} us<br>"
                 + "<b>Amplitude:</b> %{y:.2f} V<br>"
                 + "<b>Type:</b> %{customdata[1]}<br>"
+                + "<b>Impulse N°:</b> %{customdata[4]}<br>"
                 + "<b>Channel:</b> %{customdata[2]}<br>"
                 + "<b>ID:</b> %{customdata[3]}<extra></extra>",
                 name=group_name,
@@ -217,7 +222,7 @@ def process_data(ch1, ch2, ch3, ch4, time1, time2, time3, time4, status_label):
     )
     status_label.update()
 
-    impulses_list = [ch1[2 * i + 1] for i in range(impulsesNum)]
+    impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     ganancia = max(df["amplitude"]) / max(impulse_ave_final)
     impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
