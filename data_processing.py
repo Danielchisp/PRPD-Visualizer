@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from config import (
     CHANNEL_COLORS,
-    CHANNEL_DICT,
     FFT_LIMITS,
     TRIGGER_SETTINGS,
     WINDOW_SETTINGS,
@@ -27,10 +26,8 @@ def W_eq_squared(f: np.ndarray, Pxx: np.ndarray) -> float:
 
 
 def process_channel(channel_name, channel_cfg, impulsesNum):
+    global WINDOW_SETTINGS
     signals_list = []
-    window_antenna = WINDOW_SETTINGS["window_antenna"]
-    window_HFCT = WINDOW_SETTINGS["window_HFCT"]
-    FS = WINDOW_SETTINGS["fs"]
 
     for i in tqdm(range(impulsesNum), desc=f"Procesando {channel_name.upper()}"):
         signal_num = 2 * i + 1
@@ -42,20 +39,25 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
         ]:
             for peak_idx in peaks:
 
-                if channel_name == "CH4":
+                if channel_name == "Antenna":
 
-                    start = peak_idx - int(0.2 * window_antenna)
-                    end = peak_idx + int(0.8 * window_antenna)
+                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_antenna"])
+                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_antenna"])
                     seg = signal[start:end]
 
                 else:
-                    start = peak_idx - int(0.2 * window_HFCT)
-                    end = peak_idx + int(0.8 * window_HFCT)
+                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_HFCT"])
+                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_HFCT"])
                     seg = signal[start:end]
 
-                f, Pxx = welch(seg, FS, nperseg=min(5000, len(seg)), scaling="spectrum")
+                f, Pxx = welch(
+                    seg,
+                    WINDOW_SETTINGS["fs"],
+                    nperseg=min(5000, len(seg)),
+                    scaling="spectrum",
+                )
 
-                t_local = np.arange(len(seg)) / FS
+                t_local = np.arange(len(seg)) / WINDOW_SETTINGS["fs"]
                 t0, T2 = time_metrics(t_local, seg)
                 W2 = W_eq_squared(f, Pxx)
 
@@ -77,7 +79,7 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                         "t0": t0,
                         "T2": T2,
                         "W2": W2,
-                        "impulseNum": i
+                        "impulseNum": i,
                     }
                 )
 
@@ -86,7 +88,17 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
     return signals_list
 
 
-def process_data(impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4, status_label):
+def process_data(
+    impulseMainData,
+    mainHFCTMainData,
+    reverseHFCTMainData,
+    antennaMainData,
+    time1,
+    time2,
+    time3,
+    time4,
+    status_label,
+):
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
 
@@ -133,7 +145,10 @@ def process_data(impulseMainData, mainHFCTMainData, reverseHFCTMainData, antenna
         for ch_name, ch_data in CHANNELS.items():
             signal = ch_data["signal"][signalNum]
 
-            if ch_name == "CH4":
+            if ch_name == "Antenna":
+                print(
+                    f"Processing antenna shushetumare. Window: {WINDOW_SETTINGS['window_antenna']}"
+                )
                 main_peaks, _ = find_peaks(
                     signal[
                         WINDOW_SETTINGS["main_time_init"] : WINDOW_SETTINGS[
@@ -149,6 +164,9 @@ def process_data(impulseMainData, mainHFCTMainData, reverseHFCTMainData, antenna
                     distance=WINDOW_SETTINGS["window_antenna"],
                 )
             else:
+                print(
+                    f'Processing HFCT shushetumare. Window: {WINDOW_SETTINGS["window_HFCT"]}'
+                )
                 main_peaks, _ = find_peaks(
                     signal[
                         WINDOW_SETTINGS["main_time_init"] : WINDOW_SETTINGS[
@@ -170,11 +188,11 @@ def process_data(impulseMainData, mainHFCTMainData, reverseHFCTMainData, antenna
             )
 
     signals = []
-    
+
     for ch_name, ch_cfg in CHANNELS.items():
         status_label.config(text=f"Processing {ch_name.upper()}...")
         status_label.update()
-        
+
         signals += process_channel(ch_name, ch_cfg, impulsesNum)
 
     status_label.config(

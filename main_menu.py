@@ -367,8 +367,8 @@ def process_data_GUI():
     get_spinbox_values()
 
     print("The following parameters have been set:")
-    print(f"Window Antenna: {WINDOW_SETTINGS['window_antenna']} ns")
-    print(f"Window HFCT: {WINDOW_SETTINGS['window_HFCT']} ns")
+    print(f"Window Antenna: {round(WINDOW_SETTINGS['window_antenna']/5000,2)} us")
+    print(f"Window HFCT: {round(WINDOW_SETTINGS['window_HFCT']/5000,2)} us")
     print(f"Sampling Frequency: {WINDOW_SETTINGS['fs']} GHz")
     print(f"Main PD Time Init: {WINDOW_SETTINGS['main_time_init']} ns")
     print(f"Main PD Time End: {WINDOW_SETTINGS['main_time_fin']} ns")
@@ -530,7 +530,7 @@ def setup_gui():
         "<Leave>", lambda e: calculate_metadata_btn.config(cursor="")
     )
 
-    visualize_btn = tk.Button(
+    visualize_btn = ttk.Button(
         columna1,
         text="4. Visualize Data",
         command=visualize_data,

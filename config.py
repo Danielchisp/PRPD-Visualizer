@@ -27,8 +27,9 @@ TRIGGER_SETTINGS = {
     "antenna": {"main": 0.01, "reverse": 100},
 }
 
-window_antenna = 2500
+window_antenna = 500
 window_HFCT = 5000
+
 samplesToMicros = 5000
 impulseDownsample = 10000
 
