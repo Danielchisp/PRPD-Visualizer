@@ -98,6 +98,7 @@ def process_data(
     time3,
     time4,
     status_label,
+    impulse_ave_final,
 ):
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
@@ -146,9 +147,7 @@ def process_data(
             signal = ch_data["signal"][signalNum]
 
             if ch_name == "Antenna":
-                print(
-                    f"Processing antenna shushetumare. Window: {WINDOW_SETTINGS['window_antenna']}"
-                )
+
                 main_peaks, _ = find_peaks(
                     signal[
                         WINDOW_SETTINGS["main_time_init"] : WINDOW_SETTINGS[
@@ -164,9 +163,7 @@ def process_data(
                     distance=WINDOW_SETTINGS["window_antenna"],
                 )
             else:
-                print(
-                    f'Processing HFCT shushetumare. Window: {WINDOW_SETTINGS["window_HFCT"]}'
-                )
+
                 main_peaks, _ = find_peaks(
                     signal[
                         WINDOW_SETTINGS["main_time_init"] : WINDOW_SETTINGS[
@@ -240,12 +237,12 @@ def process_data(
     )
     status_label.update()
 
-    impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
-    impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
+    # impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
+    # impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     ganancia = max(df["amplitude"]) / max(impulse_ave_final)
     impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
 
-    impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
+    # impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
 
     scatter_traces.append(
         go.Scatter(

@@ -11,6 +11,7 @@ import psutil
 import pandas as pd
 import numpy as np
 import sys
+from scipy.signal import resample
 
 
 from config import (
@@ -39,7 +40,7 @@ ram_label = None
 
 
 def load_data(folder):
-    global status_label, ram_label
+    global status_label, ram_label, impulse_ave_final
 
     status_label.config(
         text="Loading CH1 data... This may take a while...",
@@ -105,6 +106,13 @@ def load_data(folder):
 
     time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
 
+    impulsesNum = int(len(impulseMainData.columns) / 2)
+    impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
+    impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
+    impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
+    # ganancia = max(df["amplitude"]) / max(impulse_ave_final)
+    # impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
+
     return (
         impulseMainData,
         mainHFCTMainData,
@@ -133,13 +141,15 @@ def update_ram_display():
     root.after(1000, update_ram_display)  # Update every second
 
 
-def adjust_trigger_interface(x, y, color):
+def adjust_trigger_interface(x, y, impulseAve, color):
+    global time1
     fig, ax = plt.subplots()
     fig.canvas.manager.window.attributes(
         "-topmost", 1
     )  # Asegurar que la ventana esté en primer plano
     # fig.canvas.manager.full_screen_toggle()  # Activar pantalla completa
     ax.plot(x, y, color=color)
+    ax.plot(time1, impulseAve * max(y) / max(abs(impulseAve)), color="red")
     ax.set_title(
         "Drag the red line to set the trigger level.\n"
         f"WARNING! Ensure all items in the palette are deselected before moving the line. When done, press Enter."
@@ -266,9 +276,13 @@ def load_app_data():
 
 
 def trigger_detection():
-    global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
+    global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4, impulse_ave_final
     global TRIGGER_SETTINGS, status_label
     IMPULSES_NUM = int(len(impulseMainData.columns) / 2)
+
+    print(
+        impulse_ave_final
+    )  # -> impulse_ave_final es none. Esto debe procesarse una vez se cargan los datos.
 
     triggerSettingLoop = False
 
@@ -309,7 +323,7 @@ def trigger_detection():
         )
         status_label.update()
         TRIGGER_SETTINGS["mainHFCT"]["main"] = adjust_trigger_interface(
-            time2, signalCH2, "blue"
+            time2, signalCH2, impulse_ave_final, "blue"
         )
         print(f"CH2 main trigger: {TRIGGER_SETTINGS['mainHFCT']['main']} V")
 
@@ -320,7 +334,7 @@ def trigger_detection():
         status_label.update()
 
         TRIGGER_SETTINGS["reverseHFCT"]["reverse"] = adjust_trigger_interface(
-            time3, signalCH3, "green"
+            time3, signalCH3, impulse_ave_final, "green"
         )
         print(f"CH3 reverse trigger: {TRIGGER_SETTINGS['reverseHFCT']['reverse']} V")
 
@@ -331,12 +345,12 @@ def trigger_detection():
         status_label.update()
 
         TRIGGER_SETTINGS["antenna"]["main"] = adjust_trigger_interface(
-            time4, signalCH4, "black"
+            time4, signalCH4, impulse_ave_final, "black"
         )
         print(f"CH4 main trigger: {TRIGGER_SETTINGS['antenna']['main']} V")
 
         response = messagebox.askokcancel(
-            "The trigger levels are the following:",
+            "Trigger Levels",
             f"CH2 Main: {round(TRIGGER_SETTINGS['mainHFCT']['main']*1000, 2)} mV\n"
             f"CH3 Reverse: {round(TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000, 2)} mV\n"
             f"CH4 Main: {round(TRIGGER_SETTINGS['antenna']['main']*1000, 2)} mV\n\n"
@@ -385,6 +399,7 @@ def process_data_GUI():
         time3,
         time4,
         status_label,
+        impulse_ave_final,
     )
 
     print("Data processed successfully!")
