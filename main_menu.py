@@ -207,21 +207,21 @@ def update_trigger_labels():
     labelCH2Main.config(
         text=f"{round(TRIGGER_SETTINGS['mainHFCT']['main']*1000,2)} mV (Main)"
     )
-    labelCH2Reverse.config(
-        text=f"{round(TRIGGER_SETTINGS['mainHFCT']['reverse']*1000,2)} mV (Rev)"
-    )
-    labelCH3Main.config(
-        text=f"{round(TRIGGER_SETTINGS['reverseHFCT']['main']*1000,2)} mV (Main)"
-    )
+    # labelCH2Reverse.config(
+    #     text=f"{round(TRIGGER_SETTINGS['mainHFCT']['reverse']*1000,2)} mV (Rev)"
+    # )
+    # labelCH3Main.config(
+    #     text=f"{round(TRIGGER_SETTINGS['reverseHFCT']['main']*1000,2)} mV (Main)"
+    # )
     labelCH3Reverse.config(
         text=f"{round(TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000,2)} mV (Rev)"
     )
     labelCH4Main.config(
         text=f"{round(TRIGGER_SETTINGS['antenna']['main']*1000,2)} mV (Main)"
     )
-    labelCH4Reverse.config(
-        text=f"{round(TRIGGER_SETTINGS['antenna']['reverse']*1000,2)} mV (Rev)"
-    )
+    # labelCH4Reverse.config(
+    #     text=f"{round(TRIGGER_SETTINGS['antenna']['reverse']*1000,2)} mV (Rev)"
+    # )
 
 
 def load_app_data():
@@ -325,7 +325,9 @@ def trigger_detection():
         TRIGGER_SETTINGS["mainHFCT"]["main"] = adjust_trigger_interface(
             time2, signalCH2, impulse_ave_final, "blue"
         )
-        print(f"CH2 main trigger: {TRIGGER_SETTINGS['mainHFCT']['main']} V")
+        print(
+            f"CH2 main trigger: {round(1000*TRIGGER_SETTINGS['mainHFCT']['main'],2)} mV"
+        )
 
         status_label.config(
             text=f"Adjusting Channel 3 trigger level. Drag the red line to set the trigger level.\n"
@@ -336,7 +338,9 @@ def trigger_detection():
         TRIGGER_SETTINGS["reverseHFCT"]["reverse"] = adjust_trigger_interface(
             time3, signalCH3, impulse_ave_final, "green"
         )
-        print(f"CH3 reverse trigger: {TRIGGER_SETTINGS['reverseHFCT']['reverse']} V")
+        print(
+            f"CH3 reverse trigger: {round(1000*TRIGGER_SETTINGS['reverseHFCT']['reverse'],2)} mV"
+        )
 
         status_label.config(
             text=f"Adjusting Channel 4 trigger level. Drag the red line to set the trigger level.\n"
@@ -347,7 +351,9 @@ def trigger_detection():
         TRIGGER_SETTINGS["antenna"]["main"] = adjust_trigger_interface(
             time4, signalCH4, impulse_ave_final, "black"
         )
-        print(f"CH4 main trigger: {TRIGGER_SETTINGS['antenna']['main']} V")
+        print(
+            f"CH4 main trigger: {round(1000*TRIGGER_SETTINGS['antenna']['main'],2)} mV"
+        )
 
         response = messagebox.askokcancel(
             "Trigger Levels",
@@ -633,12 +639,12 @@ def setup_gui():
     )
     labelCH2Main.pack(fill=tk.X, pady=5)
 
-    labelCH2Reverse = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['mainHFCT']['reverse']*1000} mV (Rev)",
-        font=("Arial", 10),
-    )
-    labelCH2Reverse.pack(fill=tk.X, pady=5)
+    # labelCH2Reverse = ttk.Label(
+    #     columna3,
+    #     text=f"{TRIGGER_SETTINGS['mainHFCT']['reverse']*1000} mV (Rev)",
+    #     font=("Arial", 10),
+    # )
+    # labelCH2Reverse.pack(fill=tk.X, pady=5)
 
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
@@ -646,13 +652,12 @@ def setup_gui():
         anchor="w"
     )
 
-    labelCH3Main = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['reverseHFCT']['main']*1000} mV (Main)",
-        font=("Arial", 10),
-    )
-    labelCH3Main.pack(fill=tk.X, pady=5)
-    # Separador horizontal
+    # labelCH3Main = ttk.Label(
+    #     columna3,
+    #     text=f"{TRIGGER_SETTINGS['reverseHFCT']['main']*1000} mV (Main)",
+    #     font=("Arial", 10),
+    # )
+    # labelCH3Main.pack(fill=tk.X, pady=5)
 
     labelCH3Reverse = ttk.Label(
         columna3,
@@ -672,12 +677,12 @@ def setup_gui():
     )
     labelCH4Main.pack(fill=tk.X, pady=5)
 
-    labelCH4Reverse = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['antenna']['reverse']*1000} mV (Reverse)",
-        font=("Arial", 10),
-    )
-    labelCH4Reverse.pack(fill=tk.X, pady=5)
+    # labelCH4Reverse = ttk.Label(
+    #     columna3,
+    #     text=f"{TRIGGER_SETTINGS['antenna']['reverse']*1000} mV (Reverse)",
+    #     font=("Arial", 10),
+    # )
+    # labelCH4Reverse.pack(fill=tk.X, pady=5)
 
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
