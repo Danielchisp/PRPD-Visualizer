@@ -21,8 +21,10 @@ from config import (
     impulseDownsample,
     host,
     port,
+    availablePorts,
 )
 
+folder = None
 df = None
 scatter_traces = None
 impulse_ave_final = None
@@ -36,7 +38,8 @@ impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData = (
     None,
 )
 time1, time2, time3, time4 = None, None, None, None
-ram_label = None
+ram_label, metadata_label = None, None
+port_selection = None
 
 
 def load_data(folder):
@@ -110,8 +113,6 @@ def load_data(folder):
     impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
-    # ganancia = max(df["amplitude"]) / max(impulse_ave_final)
-    # impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
 
     return (
         impulseMainData,
@@ -228,6 +229,7 @@ def load_app_data():
     global df, scatter_traces, impulse_ave_final, time1, status_label, folder_label, CHANNEL_DICT
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
+    global folder
 
     CHANNEL_DICT["Impulse"] = comboImpulse.get()
     CHANNEL_DICT["Ferrite 1"] = comboHFCTMain.get()
@@ -235,7 +237,7 @@ def load_app_data():
     CHANNEL_DICT["Antenna"] = comboAntenna.get()
 
     status_label.config(
-        text="Searching for Measurement Folder. All these files are required | CH1.csv - CH2.csv - CH3.csv - CH4.csv",
+        text="Searching for Measurement Folder...",
     )
     status_label.update()
 
@@ -296,7 +298,7 @@ def trigger_detection():
         )
 
         status_label.config(
-            text="Peak Detection Trigger Adjustment Select the signal to adjust"
+            text="Peak Detection Trigger Adjustment. Please select the signal to adjust"
         )
 
         status_label.update()
@@ -377,6 +379,8 @@ def trigger_detection():
 def process_data_GUI():
     global df, scatter_traces, impulse_ave_final, time1, status_label
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
+    global metadata_label
+    global folder
 
     status_label.config(
         text="Processing data... This may take a few seconds.",
@@ -414,6 +418,12 @@ def process_data_GUI():
         text="Metadata calculated successfully! Now you can visualize the data."
     )
     status_label.update()
+
+    metadata_label.config(
+        text=f"Metadata calculated for:\n{os.path.basename(folder)}",
+        foreground="green",
+    )
+    metadata_label.update()
     toggle_visualize_button(True)
 
 
@@ -424,13 +434,13 @@ def toggle_visualize_button(state):
         visualize_btn.config(state=new_state)
 
 
-def run_dash_app(df, scatter_traces, time1, impulse_ave_final):
+def run_dash_app(df, scatter_traces, time1, impulse_ave_final, port):
 
     create_dash_app(df, scatter_traces, time1, impulse_ave_final, host, port)
 
 
 def visualize_data():
-    global df, scatter_traces, time1, impulse_ave_final, dash_process, status_label
+    global df, scatter_traces, time1, impulse_ave_final, dash_process, status_label, port_selection
 
     status_label.config(
         text="Starting visualization... This may take a few seconds.",
@@ -442,10 +452,12 @@ def visualize_data():
         dash_process.terminate()
         dash_process.join()
 
+    port = port_selection.get()
+
     # Crear nuevo proceso y pasar los datos como argumentos
     dash_process = Process(
         target=run_dash_app,
-        args=(df, scatter_traces, time1, impulse_ave_final),
+        args=(df, scatter_traces, time1, impulse_ave_final, port),
     )
     dash_process.start()
 
@@ -480,16 +492,17 @@ def get_spinbox_values():
 def setup_gui():
     """Configura la interfaz gráfica de Tkinter"""
     global root, visualize_btn, status_label, folder_label
-    global labelCH2Main, labelCH2Reverse, labelCH3Main, labelCH3Reverse, labelCH4Main, labelCH4Reverse
+    global labelCH2Main, labelCH3Reverse, labelCH4Main
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
     global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit
-    global ram_label
+    global ram_label, metadata_label
     global comboAntenna, comboHFCTMain, comboHFCTReverse, comboImpulse
     global logo_img  # Para evitar que el recolector de basura elimine la imagen
+    global port_selection
 
     root = tk.Tk()
     root.title("TRPD Analyzer & Viewer")
-    root.geometry("800x400")  # Ajustar el tamaño de la ventana
+    root.geometry("700x400")  # Ajustar el tamaño de la ventana
     root.resizable(False, False)
 
     # Cargar y asignar el ícono de la aplicación
@@ -571,18 +584,42 @@ def setup_gui():
     exit_btn.bind("<Leave>", lambda e: exit_btn.config(cursor=""))
 
     # Etiqueta de estado
+    # Crear un frame para status_label y port selection juntos en la misma fila
+    bottom_frame = ttk.Frame(main_frame)
+    bottom_frame.grid(row=1, column=0, columnspan=4, sticky="ew", pady=10)
+    bottom_frame.columnconfigure(0, weight=3)
+    bottom_frame.columnconfigure(1, weight=1)
+
     status_label = ttk.Label(
-        main_frame, text="No data loaded", anchor="w", padding="10"
+        bottom_frame, text="No data loaded", anchor="w", padding="10"
     )
-    status_label.grid(row=1, column=0, columnspan=4, pady=10, sticky="ew")
+    status_label.grid(row=0, column=0, sticky="ew")
+
+    # Port selection (alineado a la derecha en la misma fila)
+    port_frame = ttk.Frame(bottom_frame)
+    port_frame.grid(row=0, column=1, sticky="e", padx=(10, 0))
+
+    ttk.Label(port_frame, text="Port Selection:").grid(
+        row=0, column=0, sticky="e", padx=(0, 5)
+    )
+    port_selection = ttk.Combobox(port_frame, values=availablePorts)
+    port_selection.grid(row=0, column=1, sticky="w")
+    port_selection.set(availablePorts[0])
 
     folder_label = ttk.Label(columna1, text="No Folder Selected", foreground="red")
     folder_label.pack(pady=10)
+
+    metadata_label = ttk.Label(
+        columna1, text="No Metadata Calculated", foreground="red"
+    )
+    metadata_label.pack(pady=10)
 
     ram_label = ttk.Label(
         columna1, text="RAM Usage: 0.00 MB", font=("Arial", 8, "bold"), anchor="center"
     )
     ram_label.pack(pady=0)
+
+    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
 
     # Iniciar la actualización periódica
     update_ram_display()
