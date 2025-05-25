@@ -35,11 +35,14 @@ window_HFCT = 5000
 samplesToMicros = 5000
 impulseDownsample = 10000
 
+tkinterAppDim = "700x430"
 
 # Configuración de ventanas
 WINDOW_SETTINGS = {
     "window_antenna": window_antenna,
     "window_HFCT": window_HFCT,
+    "window_antenna_vis": 5000,
+    "window_HFCT_vis": 5000,
     "half_window_antenna": int(window_antenna / 2),
     "half_window_HFCT": int(window_HFCT / 2),
     "main_time_init": 1 * 5000,

@@ -22,6 +22,14 @@ import plotly.graph_objects as go  # Used for detailed graph customization
 
 dash_server_process = None
 
+classMapVariables = [
+    {"label": "Peak to Peak Voltage", "value": "Vpp"},
+    {"label": "Energy", "value": "Energy"},
+    {"label": "Apparent Charge", "value": "Qapp"},
+    {"label": "Equivalent Time", "value": "T2"},
+    {"label": "Equivalent Frequency", "value": "W2"},
+]
+
 
 def create_dash_app(df, scatter_traces, time, impulse, host, port):
 
@@ -114,10 +122,10 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                             dcc.Tabs(
                                 [
                                     # Tab for the PD Data Analyzer
-                                    dcc.Tab(
+                                    dcc.Tab(  # PD Data Analyzer
                                         label="PD Data Analyzer",
                                         children=[
-                                            html.Div(
+                                            html.Div( # Buttons for downloading data
                                                 [
                                                     html.Button(
                                                         "Download Selected Data TRPD",
@@ -137,15 +145,6 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                         },
                                                     ),
                                                     dcc.Download(id="download-data-2"),
-                                                    # html.Button(
-                                                    #     "Not assigned",
-                                                    #     id="button-3",
-                                                    #     style={
-                                                    #         "margin-left": "20px",
-                                                    #         "cursor": "pointer",
-                                                    #     },
-                                                    # ),
-                                                    # dcc.Download(id="download-data-3"),
                                                 ],
                                                 style={
                                                     "marginBottom": "20px",
@@ -165,6 +164,32 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                             # Main Scatter Plot
                                                             html.Div(
                                                                 [
+                                                                    # DataTable with summary statistics
+                                                                    dash.dash_table.DataTable(
+                                                                        id='selected-values-metrics-table',
+                                                                        columns=[
+                                                                            {"name": "Vpp (mV)", "id": "Vpp"},
+                                                                            {"name": "Energy (mV^2)", "id": "Energy"},
+                                                                            {"name": "Qapp (-)", "id": "Qapp"},
+                                                                            {"name": "Average\nTime (us)", "id": "Average Time"},
+                                                                            {"name": "Number of Signals", "id": "Number of Signals"},
+                                                                        ],
+                                                                        data=[
+                                                                            {
+                                                                                "Vpp": round(df["Vpp"].mean()*1000,2) if not df.empty else "",
+                                                                                "Energy": round(df["Energy"].mean(),2) if not df.empty else "",
+                                                                                "Qapp": round(df["Qapp"].mean(),2) if not df.empty else "",
+                                                                                "Average Time": round(df["x"].mean(),2) if not df.empty else "",
+                                                                                "Number of Signals": round(len(df.columns)/2,2) if not df.empty else "",
+                                                                            }
+                                                                        ],
+                                                                        style_table={"marginBottom": "20px"},
+                                                                        style_cell={"textAlign": "center"},
+                                                                        style_header={
+                                                                            "fontWeight": "bold",
+                                                                            "textAlign": "center"
+                                                                        },
+                                                                    ),
                                                                     dcc.Graph(
                                                                         id="scatter-plot",
                                                                         figure={
@@ -232,9 +257,29 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                     # Time Series and FFT Plots Section
                                                     html.Div(
                                                         [
-                                                            # Time Series Plot
+                                                            # Time Series Plot with Dropdowns
                                                             html.Div(
                                                                 [
+                                                                    # First Dropdown (generic options)
+                                                                    dcc.Dropdown(
+                                                                        id="dropdown-x-axis",
+                                                                        options=classMapVariables,
+                                                                        value='Vpp',
+                                                                        placeholder="x-axis",
+                                                                        style={
+                                                                            "marginBottom": "10px"
+                                                                        },
+                                                                    ),
+                                                                    # Second Dropdown (generic options)
+                                                                    dcc.Dropdown(
+                                                                        id="dropdown-y-axis",
+                                                                        options=classMapVariables,
+                                                                        value='Energy',
+                                                                        placeholder="y-axis",
+                                                                        style={
+                                                                            "marginBottom": "20px"
+                                                                        },
+                                                                    ),
                                                                     dcc.Graph(
                                                                         id="upper-right-graph",
                                                                         figure={
@@ -251,7 +296,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                                 "scale": 1,
                                                                             },
                                                                         },
-                                                                    )
+                                                                    ),
                                                                 ],
                                                                 style={
                                                                     "marginBottom": "20px",
@@ -309,7 +354,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                             ),
                                         ],
                                     ),
-                                    dcc.Tab(
+                                    dcc.Tab(  # User Manual
                                         label="User Manual",
                                     ),
                                 ]
@@ -325,9 +370,11 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
     # Callback for updating time-series and FFT plots
     @app.callback(
         [Output("upper-right-graph", "figure"), Output("lower-right-graph", "figure")],
-        [Input("scatter-plot", "clickData"), Input("scatter-plot", "selectedData")],
+        [Input("scatter-plot", "clickData"), Input("scatter-plot", "selectedData"),
+         Input("dropdown-x-axis", "value"), Input("dropdown-y-axis", "value")],
     )
-    def update_plots(clickData, selectedData):
+    def update_plots(clickData, selectedData, x_axis, y_axis):
+        
         ctx = dash.callback_context  # Get trigger context
         selected_PRPD_fig, fft_fig = [], []
 
@@ -345,15 +392,30 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                 # Handle click interaction
                 selected_id = clickData["points"][0]["customdata"][3]
                 selected_data = df[df["id"] == selected_id].iloc[0]
-                # print(f"Default selected data: {selected_data}")
                 selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
 
             elif "selectedData" in triggered_id and selectedData:
                 # Handle selection box interaction
                 selected_ids = [pt["customdata"][3] for pt in selectedData["points"]]
                 selected_data = df[df["id"].isin(selected_ids)]
-                selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data)
+                selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data, x_axis, y_axis)
 
+            elif "dropdown-x-axis" in triggered_id or "dropdown-y-axis" in triggered_id:
+                # Handle dropdown axis change
+                # Use the current selection if available, otherwise default
+                if selectedData and "points" in selectedData and selectedData["points"]:
+                    selected_ids = [pt["customdata"][3] for pt in selectedData["points"]]
+                    selected_data = df[df["id"].isin(selected_ids)]
+                    selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data, x_axis, y_axis)
+                elif clickData and "points" in clickData and clickData["points"]:
+                    selected_id = clickData["points"][0]["customdata"][3]
+                    selected_data = df[df["id"] == selected_id].iloc[0]
+                    selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
+                else:
+                    selected_id = df["id"].iloc[0]
+                    selected_data = df[df["id"] == selected_id].iloc[0]
+                    selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
+                
             else:
                 # Default fallback
                 selected_id = df["id"].iloc[0]
@@ -374,19 +436,24 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
         selected_PRPD_fig = [], []
 
         # Handle zoom or relayout data
-        if relayoutData and "xaxis.range[0]" in relayoutData:
+        if relayoutData and "xaxis.range[0]" in relayoutData and "xaxis.range[1]" in relayoutData \
+        and "yaxis.range[0]" in relayoutData and "yaxis.range[1]" in relayoutData:
             stored_layout = go.Layout(
                 title=dict(text="Selected Signals from TF Map", font=dict(size=14)),
-                xaxis=dict(title="Time (us)"),
-                yaxis=dict(title="Voltage (V)"),
-                xaxis_range=[
-                    relayoutData["xaxis.range[0]"],
-                    relayoutData["xaxis.range[1]"],
-                ],
-                yaxis_range=[
-                    relayoutData["yaxis.range[0]"],
-                    relayoutData["yaxis.range[1]"],
-                ],
+                xaxis=dict(
+                    title="Time (us)",
+                    range=[
+                        relayoutData["xaxis.range[0]"],
+                        relayoutData["xaxis.range[1]"],
+                    ]
+                ),
+                yaxis=dict(
+                    title="Voltage (V)",
+                    range=[
+                        relayoutData["yaxis.range[0]"],
+                        relayoutData["yaxis.range[1]"],
+                    ]
+                ),
                 uirevision=True,
             )
         else:
@@ -445,32 +512,34 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][3] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-                
+
                 # Suponiendo que cada valor en 'signal' es una Serie o array
-                signals_raw = filtered_df['signal'].tolist()
+                signals_raw = filtered_df["signal"].tolist()
 
                 # Convertimos todos a np.arrays limpios, sin índice
                 signals_clean = [np.array(s) for s in signals_raw]
 
                 # Creamos un DataFrame a partir de listas
-                outputDF = pd.DataFrame(signals_clean).T  # Transponemos para que cada columna sea una señal
+                outputDF = pd.DataFrame(
+                    signals_clean
+                ).T  # Transponemos para que cada columna sea una señal
 
                 # Renombramos columnas
-                outputDF.columns = [f'ID: ' + str(i) for i in scatterSelectedIds]
+                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
 
                 # Exportamos CSV
-                return dcc.send_data_frame(outputDF.to_csv, "TRPD_graph_selected_data.csv", index=False)
-
+                return dcc.send_data_frame(
+                    outputDF.to_csv, "TRPD_graph_selected_data.csv", index=False
+                )
 
             else:
                 return None
-            
+    # Callback for downloading selected data from the TF Map
     @app.callback(
         Output("download-data-2", "data"),
         Input("button-2", "n_clicks"),
         State("upper-right-graph", "selectedData"),
     )
-    
     def download_selected_data_TF_Map(button2, scatterSelectedData):
         if button2:
             if scatterSelectedData:
@@ -478,28 +547,82 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][0] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-                
+
                 # Suponiendo que cada valor en 'signal' es una Serie o array
-                signals_raw = filtered_df['signal'].tolist()
+                signals_raw = filtered_df["signal"].tolist()
 
                 # Convertimos todos a np.arrays limpios, sin índice
                 signals_clean = [np.array(s) for s in signals_raw]
 
                 # Creamos un DataFrame a partir de listas
-                outputDF = pd.DataFrame(signals_clean).T  # Transponemos para que cada columna sea una señal
+                outputDF = pd.DataFrame(
+                    signals_clean
+                ).T  # Transponemos para que cada columna sea una señal
 
                 # Renombramos columnas
-                outputDF.columns = [f'ID: ' + str(i) for i in scatterSelectedIds]
+                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
 
                 # Exportamos CSV
-                return dcc.send_data_frame(outputDF.to_csv, "TF_Map_selected_data.csv", index=False)
-
+                return dcc.send_data_frame(
+                    outputDF.to_csv, "TF_Map_selected_data.csv", index=False
+                )
 
             else:
                 return None
 
+    # Supón que tienes un DataTable con id='summary-table'
+    @app.callback(
+        Output('selected-values-metrics-table', 'data'),
+        [
+            Input('scatter-plot', 'selectedData'),
+            Input('scatter-plot', 'clickData'),
+            Input('upper-right-graph', 'selectedData'),
+            Input('upper-right-graph', 'clickData'),
+        ]
+    )
+    def update_table(scatter_selected, scatter_click, upper_selected, upper_click):
+        ctx = dash.callback_context
 
-            
+        # Default: use all data
+        filtered_df = df
+
+        if ctx.triggered:
+            triggered_id = ctx.triggered[0]['prop_id']
+            if "upper-right-graph.selectedData" in triggered_id and upper_selected and "points" in upper_selected:
+                selected_ids = [pt["customdata"][0] for pt in upper_selected["points"]]
+                filtered_df = df[df["id"].isin(selected_ids)]
+            elif "upper-right-graph.clickData" in triggered_id and upper_click and "points" in upper_click:
+                selected_id = upper_click["points"][0]["customdata"][0]
+                filtered_df = df[df["id"] == selected_id]
+            elif "scatter-plot.selectedData" in triggered_id and scatter_selected and "points" in scatter_selected:
+                selected_ids = [pt["customdata"][3] for pt in scatter_selected["points"]]
+                filtered_df = df[df["id"].isin(selected_ids)]
+            elif "scatter-plot.clickData" in triggered_id and scatter_click and "points" in scatter_click:
+                selected_id = scatter_click["points"][0]["customdata"][3]
+                filtered_df = df[df["id"] == selected_id]
+
+        # Calculate metrics
+        if not filtered_df.empty:
+            vpp = round(filtered_df["Vpp"].mean() * 1e3, 2)
+            energy = round(filtered_df["Energy"].mean()*1e3, 2)
+            qapp = round(filtered_df["Qapp"].mean(), 2)
+            avg_time = round(filtered_df["x"].mean(), 2)
+            num_signals = int(filtered_df.shape[0])
+        else:
+            vpp = energy = qapp = avg_time = num_signals = ""
+
+        new_data = [
+            {
+                "Vpp": vpp,
+                "Energy": energy,
+                "Qapp": qapp,
+                "Average Time": avg_time,
+                "Number of Signals": num_signals
+            }
+        ]
+        return new_data
+
+
 
     # This block is not necessary if the Dash app is being run as a subprocess
     # from a main application like Tkinter. Instead, ensure the `create_dash_app`

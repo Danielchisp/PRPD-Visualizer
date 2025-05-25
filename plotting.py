@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import gaussian_kde
 import plotly.graph_objects as go
 
 
@@ -61,10 +62,17 @@ def plot_time_fft_single(selected_data):
     return time_fig, fft_fig
 
 
-def plot_time_fft_multiple(selected_data):
-    eqTimeList, eqFFTList = np.array(selected_data["T2"].tolist()), np.array(
-        selected_data["W2"].tolist()
-    )
+def plot_time_fft_multiple(selected_data, xValue, yValue):
+    
+    labelDict = {
+        'Energy': 'Energy (V^2)',
+        'Vpp': 'Peak to Peak Voltage (V)',
+        'Qapp': 'Apparent Charge (C)',
+        'T2': 'Equivalent Time (s)',
+        'W2': 'Equivalent Frequency (Hz)'}
+    
+
+
 
     # Obtener las FFTs y sus tamaños
     fft_values = selected_data["fft_values"].tolist()
@@ -156,8 +164,8 @@ def plot_time_fft_multiple(selected_data):
     time_fig = {
         "data": [
             go.Scattergl(
-                x=eqTimeList,
-                y=eqFFTList,
+                x=selected_data[xValue].tolist(),
+                y=selected_data[yValue].tolist(),
                 mode="markers",
                 marker=dict(
                     size=5,
@@ -178,8 +186,8 @@ def plot_time_fft_multiple(selected_data):
                 text="Classification Map",
                 font=dict(size=16),
             ),
-            xaxis=dict(title="Time (s)"),
-            yaxis=dict(title="Equivalent Frequency (Hz)"),
+            xaxis=dict(title=labelDict[xValue]),
+            yaxis=dict(title=labelDict[yValue]),
         ),
     }
 
@@ -217,13 +225,34 @@ def plot_selected_PRPD_multiple(selected_data, stored_layout, time, impulse):
     xValues = np.array(selected_data["x"].tolist())
     yValues = np.array(selected_data["y"].tolist())
 
+    # Calcular la densidad de puntos usando un histograma 2D
+
+    xy = np.vstack([xValues, yValues])
+    z = gaussian_kde(xy)(xy)
+
+    # Normalizar la densidad para mapearla a la escala de colores
+    z_norm = (z - z.min()) / (z.max() - z.min())
+
     PRPD_multiple_fig = {
         "data": [
             go.Scatter(
                 x=xValues,
                 y=yValues,
                 mode="markers",
-                line=dict(color="blue"),
+                marker=dict(
+                    size=6,
+                    color=z_norm,
+                    colorscale="plasma",
+                    colorbar=dict(
+                        title="Density",
+                        y=0.7,
+                        yanchor="middle"
+                    ),
+                    showscale=False,  # Oculta la barra de escala de colores
+                    opacity=0.8,
+                    line=dict(width=0.5, color="DarkSlateGrey"),
+                ),
+                name="Selected Data",
             ),
             go.Scatter(
                 x=time,

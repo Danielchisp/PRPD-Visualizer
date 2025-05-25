@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import sys
 from scipy.signal import resample
+from scipy.signal import butter, filtfilt
 
 
 from config import (
@@ -22,6 +23,7 @@ from config import (
     host,
     port,
     availablePorts,
+    tkinterAppDim,
 )
 
 folder = None
@@ -43,7 +45,7 @@ port_selection = None
 
 
 def load_data(folder):
-    global status_label, ram_label, impulse_ave_final
+    global status_label, ram_label, impulse_ave_final, spinbox_HPFilter
 
     status_label.config(
         text="Loading CH1 data... This may take a while...",
@@ -99,6 +101,10 @@ def load_data(folder):
     status_label.update()
 
     print("CH4 loaded")
+    
+    status_label.config(text="Data loaded successfully! Now calculating time vectors...")
+    status_label.update()
+    
     finalTime = int(len(impulseMainData) / 5000)
     time1 = np.linspace(0, finalTime, len(impulseMainData))
     time2 = np.linspace(0, finalTime, len(mainHFCTMainData))
@@ -108,6 +114,24 @@ def load_data(folder):
     print("Data loaded successfully.")
 
     time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
+    
+    status_label.config(text="Data loaded successfully! Now applying HP filters to ferrites...")
+    
+    # Definir parámetros del filtro
+    order = 3
+    fs = 5e9  # Frecuencia de muestreo en Hz (ajusta si es necesario)
+    cutoff = float(spinbox_HPFilter.get()) * 1e6  # Frecuencia de corte en Hz (ajusta si es necesario)
+
+    # Calcular los coeficientes del filtro Butterworth pasa-altos
+    b, a = butter(order, cutoff / (0.5 * fs), btype='high', analog=False)
+
+    # Filtrar las columnas impares de mainHFCTMainData y reverseHFCTMainData
+    for df_signal in [mainHFCTMainData, reverseHFCTMainData]:
+        for col in range(1, df_signal.shape[1], 2):
+            df_signal[col] = filtfilt(b, a, df_signal[col].values)
+            
+    status_label.config(text="Data loaded successfully! Now calculating impulse average...")
+    status_label.update()
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
     impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
@@ -149,6 +173,8 @@ def adjust_trigger_interface(x, y, impulseAve, color):
         "-topmost", 1
     )  # Asegurar que la ventana esté en primer plano
     # fig.canvas.manager.full_screen_toggle()  # Activar pantalla completa
+    # Convierte impulseAve a array de numpy para evitar el TypeError
+    impulseAve = np.array(impulseAve)
     ax.plot(x, y, color=color)
     ax.plot(time1, impulseAve * max(y) / max(abs(impulseAve)), color="red")
     ax.set_title(
@@ -230,6 +256,7 @@ def load_app_data():
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
     global folder
+    global spinbox_HPFilter
 
     CHANNEL_DICT["Impulse"] = comboImpulse.get()
     CHANNEL_DICT["Ferrite 1"] = comboHFCTMain.get()
@@ -271,7 +298,7 @@ def load_app_data():
     status_label.update()
 
     folder_label.config(
-        text=f"Folder Selected: {os.path.basename(folder)}",
+        text=f"Data Loaded:\n{os.path.basename(folder)}\nHP Filter: {spinbox_HPFilter.get()} MHz",
         foreground="green",
     )
     folder_label.update()
@@ -311,6 +338,11 @@ def trigger_detection():
         )
         if signalPicked is None:
             messagebox.showerror("Error", "No signal selected. Process aborted.")
+            
+            status_label.config(
+        text="No signal selected. Process aborted. Please select a signal to adjust the trigger level."
+    )
+            status_label.update()
             return
 
         signalNum = 2 * signalPicked + 1
@@ -420,7 +452,7 @@ def process_data_GUI():
     status_label.update()
 
     metadata_label.config(
-        text=f"Metadata calculated for:\n{os.path.basename(folder)}",
+        text=f"Metadata calculated:\n{os.path.basename(folder)}",
         foreground="green",
     )
     metadata_label.update()
@@ -435,7 +467,13 @@ def toggle_visualize_button(state):
 
 
 def run_dash_app(df, scatter_traces, time1, impulse_ave_final, port):
-
+    # NOTA: Para evitar el KeyError: 'customdata' en app.py,
+    # asegúrate de que el callback de Dash verifique si 'customdata' existe en clickData["points"][0]
+    # Ejemplo en app.py:
+    #   if "customdata" in clickData["points"][0]:
+    #       selected_id = clickData["points"][0]["customdata"][3]
+    #   else:
+    #       selected_id = None
     create_dash_app(df, scatter_traces, time1, impulse_ave_final, host, port)
 
 
@@ -499,10 +537,12 @@ def setup_gui():
     global comboAntenna, comboHFCTMain, comboHFCTReverse, comboImpulse
     global logo_img  # Para evitar que el recolector de basura elimine la imagen
     global port_selection
+    global spinbox_HPFilter
+    global tkinterAppDim
 
     root = tk.Tk()
     root.title("TRPD Analyzer & Viewer")
-    root.geometry("700x400")  # Ajustar el tamaño de la ventana
+    root.geometry(tkinterAppDim)  # Ajustar el tamaño de la ventana
     root.resizable(False, False)
 
     # Cargar y asignar el ícono de la aplicación
@@ -591,7 +631,7 @@ def setup_gui():
     bottom_frame.columnconfigure(1, weight=1)
 
     status_label = ttk.Label(
-        bottom_frame, text="No data loaded", anchor="w", padding="10"
+        bottom_frame, text="No data loaded", anchor="w", justify="left", padding="10"
     )
     status_label.grid(row=0, column=0, sticky="ew")
 
@@ -599,8 +639,8 @@ def setup_gui():
     port_frame = ttk.Frame(bottom_frame)
     port_frame.grid(row=0, column=1, sticky="e", padx=(10, 0))
 
-    ttk.Label(port_frame, text="Port Selection:").grid(
-        row=0, column=0, sticky="e", padx=(0, 5)
+    ttk.Label(port_frame, text="Port Selection:", anchor="w", justify="left").grid(
+        row=0, column=0, sticky="w", padx=(0, 5)
     )
     port_selection = ttk.Combobox(port_frame, values=availablePorts)
     port_selection.grid(row=0, column=1, sticky="w")
@@ -729,6 +769,12 @@ def setup_gui():
     ttk.Label(columna4, text="Channel Assignment", font=("Arial", 10, "bold")).pack(
         pady=5
     )
+
+    ttk.Label(columna4, text="HFCTs HP Filter (MHz)").pack(anchor="w")
+    
+    spinbox_HPFilter = ttk.Spinbox(columna4, from_=0.001, to=50, increment=1)
+    spinbox_HPFilter.pack(fill=tk.X, pady=5)
+    spinbox_HPFilter.set(5)    
 
     ttk.Label(columna4, text="Impulse").pack(anchor="w")
 

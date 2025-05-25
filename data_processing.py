@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from scipy.signal import find_peaks, welch, resample
+from scipy.signal import find_peaks, welch
 from tqdm import tqdm
 
 
@@ -10,7 +10,6 @@ from config import (
     FFT_LIMITS,
     TRIGGER_SETTINGS,
     WINDOW_SETTINGS,
-    impulseDownsample,
 )
 
 
@@ -18,7 +17,7 @@ def time_metrics(t: np.ndarray, s: np.ndarray) -> tuple[float, float]:
     E = np.sum(s**2)
     t0 = np.sum(t * s**2) / E
     T2 = np.sqrt(np.sum((t - t0) ** 2 * s**2) / E)
-    return t0, T2
+    return t0, T2, E
 
 
 def W_eq_squared(f: np.ndarray, Pxx: np.ndarray) -> float:
@@ -41,30 +40,32 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
 
                 if channel_name == "Antenna":
 
-                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_antenna"])
-                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_antenna"])
-                    seg = signal[start:end]
+                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_antenna_vis"])
+                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_antenna_vis"])
+                    signalPicked = signal[start:end]
 
                 else:
-                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_HFCT"])
-                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_HFCT"])
-                    seg = signal[start:end]
+                    start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_HFCT_vis"])
+                    end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_HFCT_vis"])
+                    signalPicked = signal[start:end]
 
                 f, Pxx = welch(
-                    seg,
+                    signalPicked,
                     WINDOW_SETTINGS["fs"],
-                    nperseg=min(5000, len(seg)),
+                    nperseg=min(5000, len(signalPicked)),
                     scaling="spectrum",
                 )
 
-                t_local = np.arange(len(seg)) / WINDOW_SETTINGS["fs"]
-                t0, T2 = time_metrics(t_local, seg)
+                t_local = np.arange(len(signalPicked)) / WINDOW_SETTINGS["fs"]
+                t0, T2, Energy = time_metrics(t_local, signalPicked)
                 W2 = W_eq_squared(f, Pxx)
+                Qapp = min(np.cumsum(signalPicked))
+                Vpp = max(signalPicked) + abs(min(signalPicked))
 
                 signals_list.append(
                     {
                         "t": channel_cfg["time"][start:end],
-                        "signal": seg,
+                        "signal": signalPicked,
                         "fft_values": Pxx,
                         "freqs": f,
                         "amplitude": signal[peak_idx],
@@ -79,6 +80,9 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                         "t0": t0,
                         "T2": T2,
                         "W2": W2,
+                        "Qapp": Qapp,
+                        "Vpp": Vpp,
+                        "Energy": Energy,
                         "impulseNum": i,
                     }
                 )
