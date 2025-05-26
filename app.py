@@ -128,7 +128,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                             html.Div( # Buttons for downloading data
                                                 [
                                                     html.Button(
-                                                        "Download Selected Data TRPD",
+                                                        "Download Time Signal Data from TRPD",
                                                         id="button-1",
                                                         style={
                                                             "margin-left": "20px",
@@ -137,7 +137,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                     ),
                                                     dcc.Download(id="download-data-1"),
                                                     html.Button(
-                                                        "Download Selected Data Classification Map",
+                                                        "Download Time Signal Data from Class Map",
                                                         id="button-2",
                                                         style={
                                                             "margin-left": "20px",
@@ -145,6 +145,26 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                         },
                                                     ),
                                                     dcc.Download(id="download-data-2"),
+                                                    
+                                                    html.Button(
+                                                        "Download FFT Data from TRPD",
+                                                        id="button-3",
+                                                        style={
+                                                            "margin-left": "20px",
+                                                            "cursor": "pointer",
+                                                        },
+                                                    ),
+                                                    dcc.Download(id="download-data-3"),
+                                                    
+                                                                                                        html.Button(
+                                                        "Download FFT Data from Class Map",
+                                                        id="button-4",
+                                                        style={
+                                                            "margin-left": "20px",
+                                                            "cursor": "pointer",
+                                                        },
+                                                    ),
+                                                    dcc.Download(id="download-data-4"),
                                                 ],
                                                 style={
                                                     "marginBottom": "20px",
@@ -570,7 +590,78 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
             else:
                 return None
 
-    # Supón que tienes un DataTable con id='summary-table'
+    # Callback for downloading selected FFT data from TRPD
+    @app.callback(
+        Output("download-data-3", "data"),
+        Input("button-3", "n_clicks"),
+        State("scatter-plot", "selectedData"),
+    )
+    def download_selected_fft_TRPD(button3, scatterSelectedData):
+        if button3:
+            if scatterSelectedData:
+                scatterSelectedIds = [
+                    point["customdata"][3] for point in scatterSelectedData["points"]
+                ]
+                filtered_df = df[df["id"].isin(scatterSelectedIds)]
+
+                # Suponiendo que cada valor en 'fft_values' es una Serie o array
+                fft_raw = filtered_df["fft_values"].tolist()
+
+                # Convertimos todos a np.arrays limpios, sin índice
+                fft_clean = [np.array(f) for f in fft_raw]
+
+                # Creamos un DataFrame a partir de listas
+                outputDF = pd.DataFrame(
+                    fft_clean
+                ).T  # Transponemos para que cada columna sea una señal
+
+                # Renombramos columnas
+                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
+
+                # Exportamos CSV
+                return dcc.send_data_frame(
+                    outputDF.to_csv, "TRPD_graph_selected_fft.csv", index=False
+                )
+            else:
+                return None
+
+    # Callback for downloading selected FFT data from the TF Map
+    @app.callback(
+        Output("download-data-4", "data"),
+        Input("button-4", "n_clicks"),
+        State("upper-right-graph", "selectedData"),
+    )
+    def download_selected_fft_TF_Map(button4, scatterSelectedData):
+        if button4:
+            if scatterSelectedData:
+                scatterSelectedIds = [
+                    point["customdata"][0] for point in scatterSelectedData["points"]
+                ]
+                filtered_df = df[df["id"].isin(scatterSelectedIds)]
+
+                # Suponiendo que cada valor en 'fft_values' es una Serie o array
+                fft_raw = filtered_df["fft_values"].tolist()
+
+                # Convertimos todos a np.arrays limpios, sin índice
+                fft_clean = [np.array(f) for f in fft_raw]
+
+                # Creamos un DataFrame a partir de listas
+                outputDF = pd.DataFrame(
+                    fft_clean
+                ).T  # Transponemos para que cada columna sea una señal
+
+                # Renombramos columnas
+                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
+
+                # Exportamos CSV
+                return dcc.send_data_frame(
+                    outputDF.to_csv, "TF_Map_selected_fft.csv", index=False
+                )
+            else:
+                return None
+    
+    # Supón que tienes un DataTable con id='summary-table'3
+    
     @app.callback(
         Output('selected-values-metrics-table', 'data'),
         [
