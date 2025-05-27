@@ -213,7 +213,7 @@ def process_data(
                 y=group_data["y"],
                 mode="markers",
                 marker=dict(
-                    size=8,
+                    size=4,
                     color=group_data["color"],
                 ),
                 customdata=np.stack(
@@ -236,17 +236,8 @@ def process_data(
             )
         )
 
-    status_label.config(
-        text="Processing completed. Calculating average impulse response..."
-    )
-    status_label.update()
-
-    # impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
-    # impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     ganancia = max(df["amplitude"]) / max(impulse_ave_final)
     impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
-
-    # impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
 
     scatter_traces.append(
         go.Scatter(

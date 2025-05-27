@@ -13,6 +13,7 @@ import numpy as np
 import sys
 from scipy.signal import resample
 from scipy.signal import butter, filtfilt
+import json
 
 
 from config import (
@@ -101,10 +102,12 @@ def load_data(folder):
     status_label.update()
 
     print("CH4 loaded")
-    
-    status_label.config(text="Data loaded successfully! Now calculating time vectors...")
+
+    status_label.config(
+        text="Data loaded successfully! Now calculating time vectors..."
+    )
     status_label.update()
-    
+
     finalTime = int(len(impulseMainData) / 5000)
     time1 = np.linspace(0, finalTime, len(impulseMainData))
     time2 = np.linspace(0, finalTime, len(mainHFCTMainData))
@@ -114,23 +117,29 @@ def load_data(folder):
     print("Data loaded successfully.")
 
     time1 = np.linspace(time1[0], time1[-1], impulseDownsample)
-    
-    status_label.config(text="Data loaded successfully! Now applying HP filters to ferrites...")
-    
+
+    status_label.config(
+        text="Data loaded successfully! Now applying HP filters to ferrites..."
+    )
+
     # Definir parámetros del filtro
     order = 3
     fs = 5e9  # Frecuencia de muestreo en Hz (ajusta si es necesario)
-    cutoff = float(spinbox_HPFilter.get()) * 1e6  # Frecuencia de corte en Hz (ajusta si es necesario)
+    cutoff = (
+        float(spinbox_HPFilter.get()) * 1e6
+    )  # Frecuencia de corte en Hz (ajusta si es necesario)
 
     # Calcular los coeficientes del filtro Butterworth pasa-altos
-    b, a = butter(order, cutoff / (0.5 * fs), btype='high', analog=False)
+    b, a = butter(order, cutoff / (0.5 * fs), btype="high", analog=False)
 
     # Filtrar las columnas impares de mainHFCTMainData y reverseHFCTMainData
     for df_signal in [mainHFCTMainData, reverseHFCTMainData]:
         for col in range(1, df_signal.shape[1], 2):
             df_signal[col] = filtfilt(b, a, df_signal[col].values)
-            
-    status_label.config(text="Data loaded successfully! Now calculating impulse average...")
+
+    status_label.config(
+        text="Data loaded successfully! Now calculating impulse average..."
+    )
     status_label.update()
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
@@ -338,10 +347,10 @@ def trigger_detection():
         )
         if signalPicked is None:
             messagebox.showerror("Error", "No signal selected. Process aborted.")
-            
+
             status_label.config(
-        text="No signal selected. Process aborted. Please select a signal to adjust the trigger level."
-    )
+                text="No signal selected. Process aborted. Please select a signal to adjust the trigger level."
+            )
             status_label.update()
             return
 
@@ -771,10 +780,10 @@ def setup_gui():
     )
 
     ttk.Label(columna4, text="HFCTs HP Filter (MHz)").pack(anchor="w")
-    
+
     spinbox_HPFilter = ttk.Spinbox(columna4, from_=0.001, to=50, increment=1)
     spinbox_HPFilter.pack(fill=tk.X, pady=5)
-    spinbox_HPFilter.set(5)    
+    spinbox_HPFilter.set(5)
 
     ttk.Label(columna4, text="Impulse").pack(anchor="w")
 

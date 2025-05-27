@@ -63,16 +63,14 @@ def plot_time_fft_single(selected_data):
 
 
 def plot_time_fft_multiple(selected_data, xValue, yValue):
-    
+
     labelDict = {
-        'Energy': 'Energy (V^2)',
-        'Vpp': 'Peak to Peak Voltage (V)',
-        'Qapp': 'Apparent Charge (C)',
-        'T2': 'Equivalent Time (s)',
-        'W2': 'Equivalent Frequency (Hz)'}
-    
-
-
+        "Energy": "Energy (V^2)",
+        "Vpp": "Peak to Peak Voltage (V)",
+        "Qapp": "Apparent Charge (C)",
+        "T2": "Equivalent Time (s)",
+        "W2": "Equivalent Frequency (Hz)",
+    }
 
     # Obtener las FFTs y sus tamaños
     fft_values = selected_data["fft_values"].tolist()
@@ -235,26 +233,22 @@ def plot_selected_PRPD_multiple(selected_data, stored_layout, time, impulse):
 
     PRPD_multiple_fig = {
         "data": [
-            go.Scatter(
+            go.Scattergl(
                 x=xValues,
                 y=yValues,
                 mode="markers",
                 marker=dict(
-                    size=6,
+                    size=4,
                     color=z_norm,
                     colorscale="plasma",
-                    colorbar=dict(
-                        title="Density",
-                        y=0.7,
-                        yanchor="middle"
-                    ),
+                    colorbar=dict(title="Density", y=0.7, yanchor="middle"),
                     showscale=False,  # Oculta la barra de escala de colores
                     opacity=0.8,
                     line=dict(width=0.5, color="DarkSlateGrey"),
                 ),
                 name="Selected Data",
             ),
-            go.Scatter(
+            go.Scattergl(
                 x=time,
                 y=impulse,
                 mode="lines",
