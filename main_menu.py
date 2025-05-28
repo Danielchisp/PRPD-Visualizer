@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import os
 from multiprocessing import Process, freeze_support
 from app import create_dash_app
-from utils import get_input_parameters
-from data_processing import process_data
+from utils import get_folder
+from data_processing import process_data, create_scatter_traces
 import psutil
 import pandas as pd
 import numpy as np
@@ -261,7 +261,7 @@ def update_trigger_labels():
 
 
 def load_app_data():
-    global df, scatter_traces, impulse_ave_final, time1, status_label, folder_label, CHANNEL_DICT
+    global df, scatter_traces, impulse_ave_final, time1, status_label, data_label, CHANNEL_DICT
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
     global folder
@@ -277,7 +277,7 @@ def load_app_data():
     )
     status_label.update()
 
-    folder = get_input_parameters()
+    folder = get_folder()
     if folder is None:
 
         messagebox.showerror("Error", "No folder selected.")
@@ -306,11 +306,11 @@ def load_app_data():
     )
     status_label.update()
 
-    folder_label.config(
+    data_label.config(
         text=f"Data Loaded:\n{os.path.basename(folder)}\nHP Filter: {spinbox_HPFilter.get()} MHz",
         foreground="green",
     )
-    folder_label.update()
+    data_label.update()
 
 
 def trigger_detection():
@@ -417,7 +417,7 @@ def trigger_detection():
     status_label.update()
 
 
-def process_data_GUI():
+def calculate_metadata():
     global df, scatter_traces, impulse_ave_final, time1, status_label
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global metadata_label
@@ -459,6 +459,8 @@ def process_data_GUI():
         text="Metadata calculated successfully! Now you can visualize the data."
     )
     status_label.update()
+
+    save_metadata()
 
     metadata_label.config(
         text=f"Metadata calculated:\n{os.path.basename(folder)}",
@@ -538,7 +540,7 @@ def get_spinbox_values():
 
 def setup_gui():
     """Configura la interfaz gráfica de Tkinter"""
-    global root, visualize_btn, status_label, folder_label
+    global root, visualize_btn, status_label, data_label
     global labelCH2Main, labelCH3Reverse, labelCH4Main
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
     global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit
@@ -603,7 +605,7 @@ def setup_gui():
     calculate_metadata_btn = ttk.Button(
         columna1,
         text="3. Calculate TRPD Metadata",
-        command=process_data_GUI,
+        command=calculate_metadata,
     )
     calculate_metadata_btn.pack(fill=tk.X, pady=5)
     calculate_metadata_btn.bind(
@@ -613,11 +615,32 @@ def setup_gui():
         "<Leave>", lambda e: calculate_metadata_btn.config(cursor="")
     )
 
+    save_metadata_btn = ttk.Button(
+        columna1,
+        text="4. Save TRPD Metadata",
+        command=save_metadata,
+    )
+    save_metadata_btn.pack(fill=tk.X, pady=5)
+    save_metadata_btn.bind(
+        "<Enter>", lambda e: save_metadata_btn.config(cursor="hand2")
+    )
+    save_metadata_btn.bind("<Leave>", lambda e: save_metadata_btn.config(cursor=""))
+
+    load_metadata_btn = ttk.Button(
+        columna1,
+        text="5. Load TRPD Metadata",
+        command=load_metadata,
+    )
+    load_metadata_btn.pack(fill=tk.X, pady=5)
+    load_metadata_btn.bind(
+        "<Enter>", lambda e: load_metadata_btn.config(cursor="hand2")
+    )
+    load_metadata_btn.bind("<Leave>", lambda e: load_metadata_btn.config(cursor=""))
+
     visualize_btn = ttk.Button(
         columna1,
-        text="4. Visualize Data",
+        text="6. Visualize Data",
         command=visualize_data,
-        state=tk.DISABLED,
     )
     visualize_btn.pack(fill=tk.X, pady=5)
     visualize_btn.bind("<Enter>", lambda e: visualize_btn.config(cursor="hand2"))
@@ -625,7 +648,7 @@ def setup_gui():
 
     exit_btn = ttk.Button(
         columna1,
-        text="5. Salir",
+        text="7. Salir",
         command=exit_app,
     )
     exit_btn.pack(fill=tk.X, pady=5)
@@ -655,8 +678,8 @@ def setup_gui():
     port_selection.grid(row=0, column=1, sticky="w")
     port_selection.set(availablePorts[0])
 
-    folder_label = ttk.Label(columna1, text="No Folder Selected", foreground="red")
-    folder_label.pack(pady=10)
+    data_label = ttk.Label(columna1, text="No Data Loaded", foreground="red")
+    data_label.pack(pady=10)
 
     metadata_label = ttk.Label(
         columna1, text="No Metadata Calculated", foreground="red"
@@ -809,6 +832,160 @@ def setup_gui():
     comboAntenna.set("CH4")
 
     return root
+
+
+def save_metadata():
+    global df, impulse_ave_final, time1, folder
+    global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
+    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_HPFilter
+    global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
+    global labelCH2Main, labelCH3Reverse, labelCH4Main
+    global status_label
+    try:
+        impulse_ave_final_path = os.path.join(folder, "impulse_ave_final.npy")
+        df_path = os.path.join(folder, "TRPD_metadata.pkl")
+        time1_path = os.path.join(folder, "time1.npy")
+        params_path = os.path.join(folder, "gui_params.json")
+
+        # Guardar impulse_ave_final como npy (mantiene tipo y shape)
+
+        status_label.config(
+            text="Saving impulse reference... This may take a few seconds.",
+        )
+        status_label.update()
+        np.save(impulse_ave_final_path, impulse_ave_final)
+
+        status_label.config(text="Saving DataFrame... This may take a few seconds.")
+        status_label.update()
+        # Guardar df como pickle (mantiene DataFrame con tipos y estructura)
+        df.to_pickle(df_path)
+
+        status_label.config(
+            text="Saving reference time... This may take a few seconds."
+        )
+        status_label.update()
+        # Guardar time1 como npy
+        np.save(time1_path, time1)
+
+        # Guardar parámetros de la GUI
+        gui_params = {}
+
+        # Spinboxes
+        gui_params["spinbox_timewindow_HFCT"] = spinbox_timewindow_HFCT.get()
+        gui_params["spinbox_timewindow_antenna"] = spinbox_timewindow_antenna.get()
+        gui_params["spinbox_sampling_frequency"] = spinbox_sampling_frequency.get()
+        gui_params["spinbox_mainPDinit"] = spinbox_mainPDinit.get()
+        gui_params["spinbox_mainPDend"] = spinbox_mainPDend.get()
+        gui_params["spinbox_reversePDinit"] = spinbox_reversePDinit.get()
+        gui_params["spinbox_HPFilter"] = spinbox_HPFilter.get()
+
+        # Comboboxes
+        gui_params["comboImpulse"] = comboImpulse.get()
+        gui_params["comboHFCTMain"] = comboHFCTMain.get()
+        gui_params["comboHFCTReverse"] = comboHFCTReverse.get()
+        gui_params["comboAntenna"] = comboAntenna.get()
+
+        # Trigger labels
+        gui_params["labelCH2Main"] = labelCH2Main.cget("text")
+        gui_params["labelCH3Reverse"] = labelCH3Reverse.cget("text")
+        gui_params["labelCH4Main"] = labelCH4Main.cget("text")
+
+        # Guardar como JSON
+        with open(params_path, "w", encoding="utf-8") as f:
+            json.dump(gui_params, f, indent=2)
+
+        print(f"impulse_ave_final guardado en: {impulse_ave_final_path}")
+        print(f"DF guardado en: {df_path}")
+        print(f"time1 guardado en: {time1_path}")
+        print(f"Parámetros GUI guardados en: {params_path}")
+    except Exception as e:
+        print(f"Error al guardar archivos: {e}")
+
+
+def load_metadata():
+    global df, impulse_ave_final, time1, scatter_traces, folder
+    global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
+    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_HPFilter
+    global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
+    global labelCH2Main, labelCH3Reverse, labelCH4Main
+    global status_label, metadata_label
+
+    folder = get_folder()
+    if folder is None:
+        print("No folder selected.")
+        return ""
+
+    impulse_ave_final_path = os.path.join(folder, "impulse_ave_final.npy")
+    df_path = os.path.join(folder, "TRPD_metadata.pkl")
+    time1_path = os.path.join(folder, "time1.npy")
+    params_path = os.path.join(folder, "gui_params.json")
+
+    try:
+        # Leer impulse_ave_final
+        impulse_ave_final = np.load(impulse_ave_final_path)
+        status_label.config(text="Impulse Ave Final loaded successfully.")
+        status_label.update()
+        print(f"impulse_ave_final cargado de: {impulse_ave_final_path}")
+        # Leer df
+        df = pd.read_pickle(df_path)
+        status_label.config(text="DataFrame loaded successfully.")
+        status_label.update()
+        print(f"DF cargado de: {df_path}")
+        # Leer time1
+        time1 = np.load(time1_path)
+        status_label.config(text="Reference Time loaded successfully.")
+
+        scatter_traces = create_scatter_traces(df, impulse_ave_final, time1)
+
+        status_label.config(text="Scatter traces created successfully.")
+        status_label.update()
+        print(f"time1 cargado de: {time1_path}")
+
+        metadata_label.config(
+            text=f"Metadata loaded:\n{os.path.basename(folder)}",
+            foreground="green",
+        )
+        metadata_label.update()
+
+        status_label.config(
+            text="Metadata loaded successfully! Now you can visualize the data."
+        )
+        status_label.update()
+
+        # Leer y aplicar parámetros GUI si existe el archivo
+        if os.path.exists(params_path):
+            with open(params_path, "r", encoding="utf-8") as f:
+                gui_params = json.load(f)
+            # Spinboxes
+            spinbox_timewindow_HFCT.set(gui_params.get("spinbox_timewindow_HFCT", "1"))
+            spinbox_timewindow_antenna.set(
+                gui_params.get("spinbox_timewindow_antenna", "0.1")
+            )
+            spinbox_sampling_frequency.set(
+                gui_params.get("spinbox_sampling_frequency", "5")
+            )
+            spinbox_mainPDinit.set(gui_params.get("spinbox_mainPDinit", "5"))
+            spinbox_mainPDend.set(gui_params.get("spinbox_mainPDend", "50"))
+            spinbox_reversePDinit.set(gui_params.get("spinbox_reversePDinit", "50"))
+            spinbox_HPFilter.set(gui_params.get("spinbox_HPFilter", "5"))
+            # Comboboxes
+            comboImpulse.set(gui_params.get("comboImpulse", "CH1"))
+            comboHFCTMain.set(gui_params.get("comboHFCTMain", "CH2"))
+            comboHFCTReverse.set(gui_params.get("comboHFCTReverse", "CH3"))
+            comboAntenna.set(gui_params.get("comboAntenna", "CH4"))
+            # Trigger labels
+            labelCH2Main.config(
+                text=gui_params.get("labelCH2Main", labelCH2Main.cget("text"))
+            )
+            labelCH3Reverse.config(
+                text=gui_params.get("labelCH3Reverse", labelCH3Reverse.cget("text"))
+            )
+            labelCH4Main.config(
+                text=gui_params.get("labelCH4Main", labelCH4Main.cget("text"))
+            )
+            print(f"Parámetros GUI cargados de: {params_path}")
+    except Exception as e:
+        print(f"Error al cargar archivos: {e}")
 
 
 def check_dash_process():

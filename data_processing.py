@@ -205,6 +205,15 @@ def process_data(
     df["id"] = range(len(df))
     df["group"] = df["type"] + " " + df["channel"]
 
+    ganancia = max(df["amplitude"]) / max(impulse_ave_final)
+    impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
+
+    scatter_traces = create_scatter_traces(df, impulse_ave_final, time1)
+
+    return df, scatter_traces, impulse_ave_final
+
+
+def create_scatter_traces(df, impulse_ave_final, time1):
     scatter_traces = []
     for group_name, group_data in df.groupby("group"):
         scatter_traces.append(
@@ -236,9 +245,6 @@ def process_data(
             )
         )
 
-    ganancia = max(df["amplitude"]) / max(impulse_ave_final)
-    impulse_ave_final = [elemento * ganancia for elemento in impulse_ave_final]
-
     scatter_traces.append(
         go.Scatter(
             x=time1,
@@ -249,5 +255,4 @@ def process_data(
             hoverinfo="none",
         )
     )
-
-    return df, scatter_traces, impulse_ave_final
+    return scatter_traces

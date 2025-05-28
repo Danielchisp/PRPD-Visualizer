@@ -3,7 +3,7 @@ from tkinter import Tk, filedialog, messagebox
 import numpy as np
 
 
-def get_input_parameters():
+def get_folder():
     """
     Muestra un diálogo para seleccionar un directorio.
     Si el usuario cancela, pregunta si desea reintentar.
