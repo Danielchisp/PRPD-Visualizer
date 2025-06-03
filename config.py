@@ -35,7 +35,7 @@ window_HFCT = 5000
 samplesToMicros = 5000
 impulseDownsample = 10000
 
-tkinterAppDim = "700x500"
+tkinterAppDim = "750x550"
 
 # Configuración de ventanas
 WINDOW_SETTINGS = {
@@ -63,4 +63,4 @@ CHANNEL_COLORS = {
 FFT_LIMITS = {"CH2": 250e6, "CH3": 250e6, "CH4": 2000e6}
 
 host = "127.0.0.1"  # Host address for the app
-port = 8002  # Port for the app
+port = 8000  # Port for the app

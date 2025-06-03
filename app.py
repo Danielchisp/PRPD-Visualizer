@@ -3,12 +3,9 @@ import signal
 import pandas as pd
 import numpy as np
 import os
-from dash import dcc, html  # Dash components for creating the layout
-from dash.dependencies import (
-    Input,
-    Output,
-    State,
-)  # For handling callbacks and interactivity
+from dash import dcc, html
+from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc  # NUEVO: Bootstrap components
 
 # from data_processing import process_data
 from plotting import (  # Custom plotting functions imported from the 'plotting' module
@@ -19,6 +16,7 @@ from plotting import (  # Custom plotting functions imported from the 'plotting'
     plot_selected_PRPD_multiple,
 )
 import plotly.graph_objects as go  # Used for detailed graph customization
+from UserManual import USER_MANUAL_MD  # Importa el manual de usuario
 
 dash_server_process = None
 
@@ -41,7 +39,11 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
         time.sleep(1)  # Espera a que el puerto se libere
 
     # Initialization of the Dash application
-    app = dash.Dash(__name__, title="TRPD Visualizer")
+    app = dash.Dash(
+        __name__,
+        title="TRPD Visualizer",
+        external_stylesheets=[dbc.themes.BOOTSTRAP],  # NUEVO: Bootstrap theme
+    )
 
     # Application layout
     app.layout = html.Div(
@@ -56,7 +58,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                 [
                                     # Main title of the application
                                     html.H1(
-                                        "TRPD Analysys Interface",
+                                        "TRPD Pattern Visualizer",
                                         style={
                                             "textAlign": "left",
                                             "fontFamily": "Roboto, sans-serif",
@@ -83,7 +85,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                 },
                                             ),
                                             html.Div(
-                                                "V0.1 | LIDAT",
+                                                "2025 - V1.0",
                                                 style={
                                                     "textAlign": "right",
                                                     "color": "white",
@@ -107,7 +109,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                             )
                         ],
                         style={
-                            "background": "linear-gradient(90deg, #03396c, #6497b1)",  # Gradient background
+                            "background": "#03396c",  # "linear-gradient(90deg, #03396c, #6497b1)",  # Gradient background
                             "borderRadius": "10px 10px 0 0",  # Rounded corners
                             "marginBottom": "20px",
                             "height": "90px",
@@ -122,58 +124,145 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                             dcc.Tabs(
                                 [
                                     # Tab for the PD Data Analyzer
-                                    dcc.Tab(  # PD Data Analyzer
+                                    dcc.Tab(
                                         label="PD Data Analyzer",
                                         children=[
-                                            html.Div( # Buttons for downloading data
+                                            html.Div(
                                                 [
-                                                    html.Button(
-                                                        "Download Time Signal Data from TRPD",
-                                                        id="button-1",
+                                                    # Botones con estética científica, colores sutiles y bordes redondeados
+                                                    dbc.Row(
+                                                        [
+                                                            dbc.Col(
+                                                                [
+                                                                    dbc.Button(
+                                                                        "Download Selected TRPD Temporal Signals",
+                                                                        id="button-1",
+                                                                        color="primary",
+                                                                        outline=True,
+                                                                        size="sm",  # Cambiado a pequeño
+                                                                        className="mb-1 me-1",  # Menos margen
+                                                                        style={
+                                                                            "width": "100%",
+                                                                            "borderRadius": "20px",
+                                                                            "backgroundColor": "#e3f0fc",
+                                                                            "color": "#185a9d",
+                                                                            "border": "1.5px solid #185a9d",
+                                                                            "fontWeight": "500",
+                                                                            "fontFamily": "Roboto, monospace",
+                                                                            "boxShadow": "0 2px 8px rgba(24,90,157,0.07)",
+                                                                            "padding": "2px 8px",  # Menos padding
+                                                                            "fontSize": "13px",  # Más pequeño
+                                                                        },
+                                                                    ),
+                                                                    dcc.Download(
+                                                                        id="download-data-1"
+                                                                    ),
+                                                                ],
+                                                                width="auto",
+                                                            ),
+                                                            dbc.Col(
+                                                                [
+                                                                    dbc.Button(
+                                                                        "Download Selected Class. Map Temporal Signals",
+                                                                        id="button-2",
+                                                                        color="primary",
+                                                                        outline=True,
+                                                                        size="sm",
+                                                                        className="mb-1 me-1",
+                                                                        style={
+                                                                            "width": "100%",
+                                                                            "borderRadius": "20px",
+                                                                            "backgroundColor": "#e3f0fc",
+                                                                            "color": "#185a9d",
+                                                                            "border": "1.5px solid #185a9d",
+                                                                            "fontWeight": "500",
+                                                                            "fontFamily": "Roboto, monospace",
+                                                                            "boxShadow": "0 2px 8px rgba(24,90,157,0.07)",
+                                                                            "padding": "2px 8px",
+                                                                            "fontSize": "13px",
+                                                                        },
+                                                                    ),
+                                                                    dcc.Download(
+                                                                        id="download-data-2"
+                                                                    ),
+                                                                ],
+                                                                width="auto",
+                                                            ),
+                                                            dbc.Col(
+                                                                [
+                                                                    dbc.Button(
+                                                                        "Download Selected TRPD FFT",
+                                                                        id="button-3",
+                                                                        color="danger",
+                                                                        outline=True,
+                                                                        size="sm",
+                                                                        className="mb-1 me-1",
+                                                                        style={
+                                                                            "width": "100%",
+                                                                            "borderRadius": "20px",
+                                                                            "backgroundColor": "#fbeaea",
+                                                                            "color": "#b71c1c",
+                                                                            "border": "1.5px solid #b71c1c",
+                                                                            "fontWeight": "500",
+                                                                            "fontFamily": "Roboto, monospace",
+                                                                            "boxShadow": "0 2px 8px rgba(183,28,28,0.07)",
+                                                                            "padding": "2px 8px",
+                                                                            "fontSize": "13px",
+                                                                        },
+                                                                    ),
+                                                                    dcc.Download(
+                                                                        id="download-data-3"
+                                                                    ),
+                                                                ],
+                                                                width="auto",
+                                                            ),
+                                                            dbc.Col(
+                                                                [
+                                                                    dbc.Button(
+                                                                        "Download Selected Class. Map FFT",
+                                                                        id="button-4",
+                                                                        color="danger",
+                                                                        outline=True,
+                                                                        size="sm",
+                                                                        className="mb-1",
+                                                                        style={
+                                                                            "width": "100%",
+                                                                            "borderRadius": "20px",
+                                                                            "backgroundColor": "#fbeaea",
+                                                                            "color": "#b71c1c",
+                                                                            "border": "1.5px solid #b71c1c",
+                                                                            "fontWeight": "500",
+                                                                            "fontFamily": "Roboto, monospace",
+                                                                            "boxShadow": "0 2px 8px rgba(183,28,28,0.07)",
+                                                                            "padding": "2px 8px",
+                                                                            "fontSize": "13px",
+                                                                        },
+                                                                    ),
+                                                                    dcc.Download(
+                                                                        id="download-data-4"
+                                                                    ),
+                                                                ],
+                                                                width="auto",
+                                                            ),
+                                                        ],
+                                                        justify="center",
+                                                        className="g-1",  # Menos espacio entre columnas
                                                         style={
-                                                            "margin-left": "20px",
-                                                            "cursor": "pointer",
-                                                        },
+                                                            "marginBottom": "0px"
+                                                        },  # Menos margen inferior
                                                     ),
-                                                    dcc.Download(id="download-data-1"),
-                                                    html.Button(
-                                                        "Download Time Signal Data from Class Map",
-                                                        id="button-2",
-                                                        style={
-                                                            "margin-left": "20px",
-                                                            "cursor": "pointer",
-                                                        },
-                                                    ),
-                                                    dcc.Download(id="download-data-2"),
-                                                    
-                                                    html.Button(
-                                                        "Download FFT Data from TRPD",
-                                                        id="button-3",
-                                                        style={
-                                                            "margin-left": "20px",
-                                                            "cursor": "pointer",
-                                                        },
-                                                    ),
-                                                    dcc.Download(id="download-data-3"),
-                                                    
-                                                                                                        html.Button(
-                                                        "Download FFT Data from Class Map",
-                                                        id="button-4",
-                                                        style={
-                                                            "margin-left": "20px",
-                                                            "cursor": "pointer",
-                                                        },
-                                                    ),
-                                                    dcc.Download(id="download-data-4"),
                                                 ],
                                                 style={
                                                     "marginBottom": "20px",
                                                     "borderRadius": "8px",
-                                                    "padding": "15px",
-                                                    "backgroundColor": "#fefefe",
-                                                    "border": "1px solid #ccc",
-                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                    "padding": "10px",  # Menos padding
+                                                    "backgroundColor": "#f8fafc",
+                                                    "border": "1px solid #cfd8dc",
+                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.04)",
                                                     "textAlign": "center",
+                                                    "display": "flex",
+                                                    "justifyContent": "center",
+                                                    "alignItems": "center",
                                                 },
                                             ),
                                             html.Div(
@@ -186,28 +275,94 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                 [
                                                                     # DataTable with summary statistics
                                                                     dash.dash_table.DataTable(
-                                                                        id='selected-values-metrics-table',
+                                                                        id="selected-values-metrics-table",
                                                                         columns=[
-                                                                            {"name": "Vpp (mV)", "id": "Vpp"},
-                                                                            {"name": "Energy (mV^2)", "id": "Energy"},
-                                                                            {"name": "Qapp (-)", "id": "Qapp"},
-                                                                            {"name": "Average\nTime (us)", "id": "Average Time"},
-                                                                            {"name": "Number of Signals", "id": "Number of Signals"},
+                                                                            {
+                                                                                "name": "Vpp (mV)",
+                                                                                "id": "Vpp",
+                                                                            },
+                                                                            {
+                                                                                "name": "Energy (mV^2)",
+                                                                                "id": "Energy",
+                                                                            },
+                                                                            {
+                                                                                "name": "Qapp (-)",
+                                                                                "id": "Qapp",
+                                                                            },
+                                                                            {
+                                                                                "name": "Average\nTime (us)",
+                                                                                "id": "Average Time",
+                                                                            },
+                                                                            {
+                                                                                "name": "Number of Signals",
+                                                                                "id": "Number of Signals",
+                                                                            },
                                                                         ],
                                                                         data=[
                                                                             {
-                                                                                "Vpp": round(df["Vpp"].mean()*1000,2) if not df.empty else "",
-                                                                                "Energy": round(df["Energy"].mean(),2) if not df.empty else "",
-                                                                                "Qapp": round(df["Qapp"].mean(),2) if not df.empty else "",
-                                                                                "Average Time": round(df["x"].mean(),2) if not df.empty else "",
-                                                                                "Number of Signals": round(len(df.columns)/2,2) if not df.empty else "",
+                                                                                "Vpp": (
+                                                                                    round(
+                                                                                        df[
+                                                                                            "Vpp"
+                                                                                        ].mean()
+                                                                                        * 1000,
+                                                                                        2,
+                                                                                    )
+                                                                                    if not df.empty
+                                                                                    else ""
+                                                                                ),
+                                                                                "Energy": (
+                                                                                    round(
+                                                                                        df[
+                                                                                            "Energy"
+                                                                                        ].mean(),
+                                                                                        2,
+                                                                                    )
+                                                                                    if not df.empty
+                                                                                    else ""
+                                                                                ),
+                                                                                "Qapp": (
+                                                                                    round(
+                                                                                        df[
+                                                                                            "Qapp"
+                                                                                        ].mean(),
+                                                                                        2,
+                                                                                    )
+                                                                                    if not df.empty
+                                                                                    else ""
+                                                                                ),
+                                                                                "Average Time": (
+                                                                                    round(
+                                                                                        df[
+                                                                                            "x"
+                                                                                        ].mean(),
+                                                                                        2,
+                                                                                    )
+                                                                                    if not df.empty
+                                                                                    else ""
+                                                                                ),
+                                                                                "Number of Signals": (
+                                                                                    round(
+                                                                                        len(
+                                                                                            df.columns
+                                                                                        )
+                                                                                        / 2,
+                                                                                        2,
+                                                                                    )
+                                                                                    if not df.empty
+                                                                                    else ""
+                                                                                ),
                                                                             }
                                                                         ],
-                                                                        style_table={"marginBottom": "20px"},
-                                                                        style_cell={"textAlign": "center"},
+                                                                        style_table={
+                                                                            "marginBottom": "20px"
+                                                                        },
+                                                                        style_cell={
+                                                                            "textAlign": "center"
+                                                                        },
                                                                         style_header={
                                                                             "fontWeight": "bold",
-                                                                            "textAlign": "center"
+                                                                            "textAlign": "center",
                                                                         },
                                                                     ),
                                                                     dcc.Graph(
@@ -226,7 +381,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                                 "scale": 1,
                                                                             },
                                                                         },
-                                                                    )
+                                                                    ),
                                                                 ],
                                                                 style={
                                                                     "marginBottom": "20px",
@@ -284,7 +439,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                     dcc.Dropdown(
                                                                         id="dropdown-x-axis",
                                                                         options=classMapVariables,
-                                                                        value='Vpp',
+                                                                        value="Vpp",
                                                                         placeholder="x-axis",
                                                                         style={
                                                                             "marginBottom": "10px"
@@ -294,7 +449,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                     dcc.Dropdown(
                                                                         id="dropdown-y-axis",
                                                                         options=classMapVariables,
-                                                                        value='Energy',
+                                                                        value="Energy",
                                                                         placeholder="y-axis",
                                                                         style={
                                                                             "marginBottom": "20px"
@@ -376,6 +531,27 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                     ),
                                     dcc.Tab(  # User Manual
                                         label="User Manual",
+                                        children=[
+                                            html.Div(
+                                                [
+                                                    dcc.Markdown(
+                                                        USER_MANUAL_MD,
+                                                        style={
+                                                            "whiteSpace": "pre-line",
+                                                            "padding": "20px",
+                                                        },
+                                                    )
+                                                ],
+                                                style={
+                                                    "backgroundColor": "#fefefe",
+                                                    "border": "1px solid #ccc",
+                                                    "borderRadius": "8px",
+                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                    "margin": "30px",
+                                                    "fontFamily": "Roboto, sans-serif",
+                                                },
+                                            )
+                                        ],
                                     ),
                                 ]
                             )
@@ -390,11 +566,15 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
     # Callback for updating time-series and FFT plots
     @app.callback(
         [Output("upper-right-graph", "figure"), Output("lower-right-graph", "figure")],
-        [Input("scatter-plot", "clickData"), Input("scatter-plot", "selectedData"),
-         Input("dropdown-x-axis", "value"), Input("dropdown-y-axis", "value")],
+        [
+            Input("scatter-plot", "clickData"),
+            Input("scatter-plot", "selectedData"),
+            Input("dropdown-x-axis", "value"),
+            Input("dropdown-y-axis", "value"),
+        ],
     )
     def update_plots(clickData, selectedData, x_axis, y_axis):
-        
+
         ctx = dash.callback_context  # Get trigger context
         selected_PRPD_fig, fft_fig = [], []
 
@@ -418,15 +598,21 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                 # Handle selection box interaction
                 selected_ids = [pt["customdata"][3] for pt in selectedData["points"]]
                 selected_data = df[df["id"].isin(selected_ids)]
-                selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data, x_axis, y_axis)
+                selected_PRPD_fig, fft_fig = plot_time_fft_multiple(
+                    selected_data, x_axis, y_axis
+                )
 
             elif "dropdown-x-axis" in triggered_id or "dropdown-y-axis" in triggered_id:
                 # Handle dropdown axis change
                 # Use the current selection if available, otherwise default
                 if selectedData and "points" in selectedData and selectedData["points"]:
-                    selected_ids = [pt["customdata"][3] for pt in selectedData["points"]]
+                    selected_ids = [
+                        pt["customdata"][3] for pt in selectedData["points"]
+                    ]
                     selected_data = df[df["id"].isin(selected_ids)]
-                    selected_PRPD_fig, fft_fig = plot_time_fft_multiple(selected_data, x_axis, y_axis)
+                    selected_PRPD_fig, fft_fig = plot_time_fft_multiple(
+                        selected_data, x_axis, y_axis
+                    )
                 elif clickData and "points" in clickData and clickData["points"]:
                     selected_id = clickData["points"][0]["customdata"][3]
                     selected_data = df[df["id"] == selected_id].iloc[0]
@@ -435,7 +621,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     selected_id = df["id"].iloc[0]
                     selected_data = df[df["id"] == selected_id].iloc[0]
                     selected_PRPD_fig, fft_fig = plot_time_fft_single(selected_data)
-                
+
             else:
                 # Default fallback
                 selected_id = df["id"].iloc[0]
@@ -456,30 +642,35 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
         selected_PRPD_fig = [], []
 
         # Handle zoom or relayout data
-        if relayoutData and "xaxis.range[0]" in relayoutData and "xaxis.range[1]" in relayoutData \
-        and "yaxis.range[0]" in relayoutData and "yaxis.range[1]" in relayoutData:
+        if (
+            relayoutData
+            and "xaxis.range[0]" in relayoutData
+            and "xaxis.range[1]" in relayoutData
+            and "yaxis.range[0]" in relayoutData
+            and "yaxis.range[1]" in relayoutData
+        ):
             stored_layout = go.Layout(
-                title=dict(text="Selected Signals from TF Map", font=dict(size=14)),
+                title=dict(text="Selected Signals from Class. Map", font=dict(size=14)),
                 xaxis=dict(
                     title="Time (us)",
                     range=[
                         relayoutData["xaxis.range[0]"],
                         relayoutData["xaxis.range[1]"],
-                    ]
+                    ],
                 ),
                 yaxis=dict(
                     title="Voltage (V)",
                     range=[
                         relayoutData["yaxis.range[0]"],
                         relayoutData["yaxis.range[1]"],
-                    ]
+                    ],
                 ),
                 uirevision=True,
             )
         else:
             # Default layout
             stored_layout = go.Layout(
-                title=dict(text="Selected Signals from TF Map", font=dict(size=14)),
+                title=dict(text="Selected Signals from Class. Map", font=dict(size=14)),
                 xaxis=dict(title="Time (us)"),
                 yaxis=dict(title="Voltage (V)"),
                 uirevision=True,
@@ -520,6 +711,49 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
 
         return selected_PRPD_fig
 
+    def build_export_dataframe(filtered_df, value_key):
+        """
+        Construye un DataFrame para exportar, con la primera columna como nombres de parámetros
+        y las siguientes columnas como los valores de cada señal seleccionada.
+        value_key: 'signal' o 'fft_values'
+        """
+        # Extraer los datos de cada señal
+        values_list = filtered_df[value_key].tolist()
+        values_clean = [np.array(v) for v in values_list]
+
+        # Extraer los parámetros
+        vpp_list = filtered_df["Vpp"].tolist()
+        t_peak_list = filtered_df["x"].tolist()
+        v_peak_list = filtered_df["y"].tolist()
+        id_list = filtered_df["id"].tolist()
+
+        # Construir la matriz de salida: cada columna es una señal
+        data_matrix = []
+        # Fila 0: Peak to Peak Voltage
+        data_matrix.append(["Peak to Peak Voltage"] + vpp_list)
+        # Fila 1: t_peak
+        data_matrix.append(["t_peak"] + t_peak_list)
+        # Fila 2: V_peak
+        data_matrix.append(["V_peak"] + v_peak_list)
+        # Fila 3: id
+        data_matrix.append(["id"] + id_list)
+
+        # Ahora, para los datos de la señal/fft, cada fila será un punto de la señal
+        max_len = max(len(arr) for arr in values_clean) if values_clean else 0
+        for i in range(max_len):
+            row = [f"point_{i}"]
+            for arr in values_clean:
+                if i < len(arr):
+                    row.append(arr[i])
+                else:
+                    row.append("")
+            data_matrix.append(row)
+
+        # Construir DataFrame
+        col_names = ["Parameter"] + [f"ID: {i}" for i in id_list]
+        outputDF = pd.DataFrame(data_matrix, columns=col_names)
+        return outputDF
+
     @app.callback(
         Output("download-data-1", "data"),
         Input("button-1", "n_clicks"),
@@ -532,29 +766,13 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][3] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-
-                # Suponiendo que cada valor en 'signal' es una Serie o array
-                signals_raw = filtered_df["signal"].tolist()
-
-                # Convertimos todos a np.arrays limpios, sin índice
-                signals_clean = [np.array(s) for s in signals_raw]
-
-                # Creamos un DataFrame a partir de listas
-                outputDF = pd.DataFrame(
-                    signals_clean
-                ).T  # Transponemos para que cada columna sea una señal
-
-                # Renombramos columnas
-                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
-
-                # Exportamos CSV
+                outputDF = build_export_dataframe(filtered_df, "signal")
                 return dcc.send_data_frame(
                     outputDF.to_csv, "TRPD_graph_selected_data.csv", index=False
                 )
-
             else:
                 return None
-    # Callback for downloading selected data from the TF Map
+
     @app.callback(
         Output("download-data-2", "data"),
         Input("button-2", "n_clicks"),
@@ -567,30 +785,13 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][0] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-
-                # Suponiendo que cada valor en 'signal' es una Serie o array
-                signals_raw = filtered_df["signal"].tolist()
-
-                # Convertimos todos a np.arrays limpios, sin índice
-                signals_clean = [np.array(s) for s in signals_raw]
-
-                # Creamos un DataFrame a partir de listas
-                outputDF = pd.DataFrame(
-                    signals_clean
-                ).T  # Transponemos para que cada columna sea una señal
-
-                # Renombramos columnas
-                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
-
-                # Exportamos CSV
+                outputDF = build_export_dataframe(filtered_df, "signal")
                 return dcc.send_data_frame(
                     outputDF.to_csv, "TF_Map_selected_data.csv", index=False
                 )
-
             else:
                 return None
 
-    # Callback for downloading selected FFT data from TRPD
     @app.callback(
         Output("download-data-3", "data"),
         Input("button-3", "n_clicks"),
@@ -603,35 +804,31 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                     point["customdata"][3] for point in scatterSelectedData["points"]
                 ]
                 filtered_df = df[df["id"].isin(scatterSelectedIds)]
-
-                # Suponiendo que cada valor en 'fft_values' es una Serie o array
-                fft_raw = filtered_df["fft_values"].tolist()
-
-                # Convertimos todos a np.arrays limpios, sin índice
-                fft_clean = [np.array(f) for f in fft_raw]
-
-                # Creamos un DataFrame a partir de listas
-                outputDF = pd.DataFrame(
-                    fft_clean
-                ).T  # Transponemos para que cada columna sea una señal
-
-                # Renombramos columnas
-                outputDF.columns = [f"ID: " + str(i) for i in scatterSelectedIds]
-
-                # Exportamos CSV
+                outputDF = build_export_dataframe(filtered_df, "fft_values")
                 return dcc.send_data_frame(
                     outputDF.to_csv, "TRPD_graph_selected_fft.csv", index=False
                 )
             else:
                 return None
 
-    # Callback for downloading selected FFT data from the TF Map
     @app.callback(
         Output("download-data-4", "data"),
         Input("button-4", "n_clicks"),
         State("upper-right-graph", "selectedData"),
     )
     def download_selected_fft_TF_Map(button4, scatterSelectedData):
+        if button4:
+            if scatterSelectedData:
+                scatterSelectedIds = [
+                    point["customdata"][0] for point in scatterSelectedData["points"]
+                ]
+                filtered_df = df[df["id"].isin(scatterSelectedIds)]
+                outputDF = build_export_dataframe(filtered_df, "fft_values")
+                return dcc.send_data_frame(
+                    outputDF.to_csv, "TF_Map_selected_fft.csv", index=False
+                )
+            else:
+                return None
         if button4:
             if scatterSelectedData:
                 scatterSelectedIds = [
@@ -659,17 +856,17 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                 )
             else:
                 return None
-    
+
     # Supón que tienes un DataTable con id='summary-table'3
-    
+
     @app.callback(
-        Output('selected-values-metrics-table', 'data'),
+        Output("selected-values-metrics-table", "data"),
         [
-            Input('scatter-plot', 'selectedData'),
-            Input('scatter-plot', 'clickData'),
-            Input('upper-right-graph', 'selectedData'),
-            Input('upper-right-graph', 'clickData'),
-        ]
+            Input("scatter-plot", "selectedData"),
+            Input("scatter-plot", "clickData"),
+            Input("upper-right-graph", "selectedData"),
+            Input("upper-right-graph", "clickData"),
+        ],
     )
     def update_table(scatter_selected, scatter_click, upper_selected, upper_click):
         ctx = dash.callback_context
@@ -678,24 +875,42 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
         filtered_df = df
 
         if ctx.triggered:
-            triggered_id = ctx.triggered[0]['prop_id']
-            if "upper-right-graph.selectedData" in triggered_id and upper_selected and "points" in upper_selected:
+            triggered_id = ctx.triggered[0]["prop_id"]
+            if (
+                "upper-right-graph.selectedData" in triggered_id
+                and upper_selected
+                and "points" in upper_selected
+            ):
                 selected_ids = [pt["customdata"][0] for pt in upper_selected["points"]]
                 filtered_df = df[df["id"].isin(selected_ids)]
-            elif "upper-right-graph.clickData" in triggered_id and upper_click and "points" in upper_click:
+            elif (
+                "upper-right-graph.clickData" in triggered_id
+                and upper_click
+                and "points" in upper_click
+            ):
                 selected_id = upper_click["points"][0]["customdata"][0]
                 filtered_df = df[df["id"] == selected_id]
-            elif "scatter-plot.selectedData" in triggered_id and scatter_selected and "points" in scatter_selected:
-                selected_ids = [pt["customdata"][3] for pt in scatter_selected["points"]]
+            elif (
+                "scatter-plot.selectedData" in triggered_id
+                and scatter_selected
+                and "points" in scatter_selected
+            ):
+                selected_ids = [
+                    pt["customdata"][3] for pt in scatter_selected["points"]
+                ]
                 filtered_df = df[df["id"].isin(selected_ids)]
-            elif "scatter-plot.clickData" in triggered_id and scatter_click and "points" in scatter_click:
+            elif (
+                "scatter-plot.clickData" in triggered_id
+                and scatter_click
+                and "points" in scatter_click
+            ):
                 selected_id = scatter_click["points"][0]["customdata"][3]
                 filtered_df = df[df["id"] == selected_id]
 
         # Calculate metrics
         if not filtered_df.empty:
             vpp = round(filtered_df["Vpp"].mean() * 1e3, 2)
-            energy = round(filtered_df["Energy"].mean()*1e3, 2)
+            energy = round(filtered_df["Energy"].mean() * 1e3, 2)
             qapp = round(filtered_df["Qapp"].mean(), 2)
             avg_time = round(filtered_df["x"].mean(), 2)
             num_signals = int(filtered_df.shape[0])
@@ -708,12 +923,10 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                 "Energy": energy,
                 "Qapp": qapp,
                 "Average Time": avg_time,
-                "Number of Signals": num_signals
+                "Number of Signals": num_signals,
             }
         ]
         return new_data
-
-
 
     # This block is not necessary if the Dash app is being run as a subprocess
     # from a main application like Tkinter. Instead, ensure the `create_dash_app`

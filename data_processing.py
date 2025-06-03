@@ -12,6 +12,8 @@ from config import (
     WINDOW_SETTINGS,
 )
 
+from utils import calculate_time_corrections
+
 
 def time_metrics(t: np.ndarray, s: np.ndarray) -> tuple[float, float]:
     E = np.sum(s**2)
@@ -24,9 +26,9 @@ def W_eq_squared(f: np.ndarray, Pxx: np.ndarray) -> float:
     return np.sqrt(np.sum(f**2 * Pxx) / np.sum(Pxx))
 
 
-def process_channel(channel_name, channel_cfg, impulsesNum):
+def process_channel(channel_name, channel_cfg, impulsesNum, time_corrections):
     global WINDOW_SETTINGS
-    signals_list = []
+    metadataDict = []
 
     for i in tqdm(range(impulsesNum), desc=f"Procesando {channel_name.upper()}"):
         signal_num = 2 * i + 1
@@ -62,7 +64,7 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                 Qapp = min(np.cumsum(signalPicked))
                 Vpp = max(signalPicked) + abs(min(signalPicked))
 
-                signals_list.append(
+                metadataDict.append(
                     {
                         "t": channel_cfg["time"][start:end],
                         "signal": signalPicked,
@@ -87,9 +89,9 @@ def process_channel(channel_name, channel_cfg, impulsesNum):
                     }
                 )
 
-    print(f"Processed {len(signals_list)} signals for {channel_name.upper()}.")
+    print(f"Processed {len(metadataDict)} signals for {channel_name.upper()}.")
 
-    return signals_list
+    return metadataDict
 
 
 def process_data(
@@ -105,6 +107,7 @@ def process_data(
     impulse_ave_final,
 ):
 
+    time_corrections = calculate_time_corrections(impulseMainData)
     impulsesNum = int(len(impulseMainData.columns) / 2)
 
     mainDischargesCH2 = []
@@ -194,7 +197,7 @@ def process_data(
         status_label.config(text=f"Processing {ch_name.upper()}...")
         status_label.update()
 
-        signals += process_channel(ch_name, ch_cfg, impulsesNum)
+        signals += process_channel(ch_name, ch_cfg, impulsesNum, time_corrections)
 
     status_label.config(
         text="Processing completed. Generating scatter plot for all channels..."

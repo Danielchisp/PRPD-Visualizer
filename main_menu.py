@@ -143,6 +143,7 @@ def load_data(folder):
     status_label.update()
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
+
     impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
@@ -615,6 +616,8 @@ def setup_gui():
         "<Leave>", lambda e: calculate_metadata_btn.config(cursor="")
     )
 
+    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
+
     save_metadata_btn = ttk.Button(
         columna1,
         text="4. Save TRPD Metadata",
@@ -645,6 +648,8 @@ def setup_gui():
     visualize_btn.pack(fill=tk.X, pady=5)
     visualize_btn.bind("<Enter>", lambda e: visualize_btn.config(cursor="hand2"))
     visualize_btn.bind("<Leave>", lambda e: visualize_btn.config(cursor=""))
+
+    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
 
     exit_btn = ttk.Button(
         columna1,
@@ -748,25 +753,11 @@ def setup_gui():
     )
     labelCH2Main.pack(fill=tk.X, pady=5)
 
-    # labelCH2Reverse = ttk.Label(
-    #     columna3,
-    #     text=f"{TRIGGER_SETTINGS['mainHFCT']['reverse']*1000} mV (Rev)",
-    #     font=("Arial", 10),
-    # )
-    # labelCH2Reverse.pack(fill=tk.X, pady=5)
-
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
     ttk.Label(columna3, text="Reverse HFCT", font=("Arial", 10, "bold")).pack(
         anchor="w"
     )
-
-    # labelCH3Main = ttk.Label(
-    #     columna3,
-    #     text=f"{TRIGGER_SETTINGS['reverseHFCT']['main']*1000} mV (Main)",
-    #     font=("Arial", 10),
-    # )
-    # labelCH3Main.pack(fill=tk.X, pady=5)
 
     labelCH3Reverse = ttk.Label(
         columna3,
@@ -785,13 +776,6 @@ def setup_gui():
         font=("Arial", 10),
     )
     labelCH4Main.pack(fill=tk.X, pady=5)
-
-    # labelCH4Reverse = ttk.Label(
-    #     columna3,
-    #     text=f"{TRIGGER_SETTINGS['antenna']['reverse']*1000} mV (Reverse)",
-    #     font=("Arial", 10),
-    # )
-    # labelCH4Reverse.pack(fill=tk.X, pady=5)
 
     ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
 
@@ -890,9 +874,15 @@ def save_metadata():
         gui_params["labelCH3Reverse"] = labelCH3Reverse.cget("text")
         gui_params["labelCH4Main"] = labelCH4Main.cget("text")
 
+        status_label.config(text="Saving parameters... This may take a few seconds.")
+        status_label.update()
+
         # Guardar como JSON
         with open(params_path, "w", encoding="utf-8") as f:
             json.dump(gui_params, f, indent=2)
+
+        status_label.config(text="Files saved successfully!")
+        status_label.update()
 
         print(f"impulse_ave_final guardado en: {impulse_ave_final_path}")
         print(f"DF guardado en: {df_path}")
