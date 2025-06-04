@@ -554,13 +554,11 @@ def setup_gui():
 
     root = tk.Tk()
     root.title("TRPD Analyzer & Viewer")
-    root.geometry(tkinterAppDim)  # Ajustar el tamaño de la ventana
+    root.geometry(tkinterAppDim)
     root.resizable(False, False)
 
     # Cargar y asignar el ícono de la aplicación
-
     if getattr(sys, "frozen", False):
-        # Si está congelado por PyInstaller
         base_path = sys._MEIPASS
     else:
         base_path = os.path.abspath(".")
@@ -572,110 +570,137 @@ def setup_gui():
         print(f"No se pudo cargar el logo: {e}")
         logo_img = None
 
-    # Marco principal
-    main_frame = ttk.Frame(root)
+    # Marco principal con grid compacto
+    main_frame = ttk.Frame(root, padding="8")
     main_frame.pack(expand=True, fill=tk.BOTH)
 
-    columna1 = ttk.Frame(main_frame, padding="5")
-    columna1.grid(row=0, column=0, sticky="nsew")
+    # --- Primera columna: Menú y estado ---
+    left_frame = ttk.Frame(main_frame)
+    left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10), rowspan=2)
 
-    # Título
-    ttk.Label(columna1, text="Main Menu", font=("Arial", 10, "bold")).pack(pady=5)
-
-    # Botones
-    load_data_btn = ttk.Button(
-        columna1,
-        text="1. Load Data (.csv)",
-        command=load_app_data,  # Llama directamente a load_app_data
-    )
-    load_data_btn.pack(fill=tk.X, pady=5)  # Usar todo el ancho del contenedor
-
-    # Cambiar el cursor al pasar el mouse
-    load_data_btn.bind("<Enter>", lambda e: load_data_btn.config(cursor="hand2"))
-    load_data_btn.bind("<Leave>", lambda e: load_data_btn.config(cursor=""))
-
-    set_trigger_btn = ttk.Button(
-        columna1,
-        text="2. Set Trigger Level",
-        command=trigger_detection,
-    )
-    set_trigger_btn.pack(fill=tk.X, pady=5)
-    set_trigger_btn.bind("<Enter>", lambda e: set_trigger_btn.config(cursor="hand2"))
-    set_trigger_btn.bind("<Leave>", lambda e: set_trigger_btn.config(cursor=""))
-
-    calculate_metadata_btn = ttk.Button(
-        columna1,
-        text="3. Calculate TRPD Metadata",
-        command=calculate_metadata,
-    )
-    calculate_metadata_btn.pack(fill=tk.X, pady=5)
-    calculate_metadata_btn.bind(
-        "<Enter>", lambda e: calculate_metadata_btn.config(cursor="hand2")
-    )
-    calculate_metadata_btn.bind(
-        "<Leave>", lambda e: calculate_metadata_btn.config(cursor="")
+    ttk.Label(left_frame, text="Main Menu", font=("Arial", 10, "bold")).pack(
+        pady=(0, 8)
     )
 
-    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
+    # Botones principales
+    for text, cmd in [
+        ("1. Load Data (.csv)", load_app_data),
+        ("2. Set Trigger Level", trigger_detection),
+        ("3. Calculate TRPD Metadata", calculate_metadata),
+        ("4. Save TRPD Metadata", save_metadata),
+        ("5. Load TRPD Metadata", load_metadata),
+        ("6. Visualize Data", visualize_data),
+        ("7. Salir", exit_app),
+    ]:
+        btn = ttk.Button(left_frame, text=text, command=cmd)
+        btn.pack(fill=tk.X, pady=2)
+        btn.bind("<Enter>", lambda e, b=btn: b.config(cursor="hand2"))
+        btn.bind("<Leave>", lambda e, b=btn: b.config(cursor=""))
 
-    save_metadata_btn = ttk.Button(
-        columna1,
-        text="4. Save TRPD Metadata",
-        command=save_metadata,
-    )
-    save_metadata_btn.pack(fill=tk.X, pady=5)
-    save_metadata_btn.bind(
-        "<Enter>", lambda e: save_metadata_btn.config(cursor="hand2")
-    )
-    save_metadata_btn.bind("<Leave>", lambda e: save_metadata_btn.config(cursor=""))
+    ttk.Separator(left_frame, orient="horizontal").pack(fill=tk.X, pady=8)
 
-    load_metadata_btn = ttk.Button(
-        columna1,
-        text="5. Load TRPD Metadata",
-        command=load_metadata,
-    )
-    load_metadata_btn.pack(fill=tk.X, pady=5)
-    load_metadata_btn.bind(
-        "<Enter>", lambda e: load_metadata_btn.config(cursor="hand2")
-    )
-    load_metadata_btn.bind("<Leave>", lambda e: load_metadata_btn.config(cursor=""))
+    data_label = ttk.Label(left_frame, text="No Data Loaded", foreground="red")
+    data_label.pack(pady=(2, 2))
 
-    visualize_btn = ttk.Button(
-        columna1,
-        text="6. Visualize Data",
-        command=visualize_data,
+    metadata_label = ttk.Label(
+        left_frame, text="No Metadata Calculated", foreground="red"
     )
-    visualize_btn.pack(fill=tk.X, pady=5)
-    visualize_btn.bind("<Enter>", lambda e: visualize_btn.config(cursor="hand2"))
-    visualize_btn.bind("<Leave>", lambda e: visualize_btn.config(cursor=""))
+    metadata_label.pack(pady=(2, 2))
 
-    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
-
-    exit_btn = ttk.Button(
-        columna1,
-        text="7. Salir",
-        command=exit_app,
+    ram_label = ttk.Label(
+        left_frame,
+        text="RAM Usage: 0.00 MB",
+        font=("Arial", 8, "bold"),
+        anchor="center",
     )
-    exit_btn.pack(fill=tk.X, pady=5)
-    exit_btn.bind("<Enter>", lambda e: exit_btn.config(cursor="hand2"))
-    exit_btn.bind("<Leave>", lambda e: exit_btn.config(cursor=""))
+    ram_label.pack(pady=(2, 0))
 
-    # Etiqueta de estado
-    # Crear un frame para status_label y port selection juntos en la misma fila
+    # --- Segunda columna: Parámetros principales ---
+    param_frame = ttk.LabelFrame(
+        main_frame, text="Trigger Detection Main Parameters", padding="8"
+    )
+    param_frame.grid(row=0, column=1, sticky="nsew", padx=(0, 10))
+
+    def add_spinbox(label, from_, to, inc, default):
+        ttk.Label(param_frame, text=label).pack(anchor="w", pady=(0, 1))
+        sb = ttk.Spinbox(param_frame, from_=from_, to=to, increment=inc)
+        sb.pack(fill=tk.X, pady=(0, 4))
+        sb.set(default)
+        return sb
+
+    spinbox_timewindow_HFCT = add_spinbox("Time Window HFCT (us):", 0.01, 10, 0.1, 1)
+    spinbox_timewindow_antenna = add_spinbox(
+        "Time Window Antenna (us):", 0.01, 10, 0.1, 0.1
+    )
+    spinbox_sampling_frequency = add_spinbox(
+        "Samplig Frequency (GHz):", 0.1, 10, 0.5, 5
+    )
+    spinbox_mainPDinit = add_spinbox("Main PD Time Init (us):", 0, 200, 5, 5)
+    spinbox_mainPDend = add_spinbox("Main PD Time End (us):", 0, 200, 5, 50)
+    spinbox_reversePDinit = add_spinbox("Reverse PD Time Init (us):", 0, 200, 5, 50)
+
+    # --- Tercera columna: Trigger Settings ---
+    trigger_frame = ttk.LabelFrame(main_frame, text="Trigger Settings", padding="8")
+    trigger_frame.grid(row=0, column=2, sticky="nsew", padx=(0, 10))
+
+    def add_trigger_label(frame, label, value, suffix):
+        ttk.Label(frame, text=label, font=("Arial", 10, "bold")).pack(
+            anchor="w", pady=(0, 2)
+        )
+        l = ttk.Label(frame, text=f"{value*1000} mV {suffix}", font=("Arial", 10))
+        l.pack(fill=tk.X, pady=(0, 4))
+        return l
+
+    labelCH2Main = add_trigger_label(
+        trigger_frame, "Main HFCT", TRIGGER_SETTINGS["mainHFCT"]["main"], "(Main)"
+    )
+    ttk.Separator(trigger_frame, orient="horizontal").pack(fill=tk.X, pady=4)
+    labelCH3Reverse = add_trigger_label(
+        trigger_frame,
+        "Reverse HFCT",
+        TRIGGER_SETTINGS["reverseHFCT"]["reverse"],
+        "(Rev)",
+    )
+    ttk.Separator(trigger_frame, orient="horizontal").pack(fill=tk.X, pady=4)
+    labelCH4Main = add_trigger_label(
+        trigger_frame, "Antenna", TRIGGER_SETTINGS["antenna"]["main"], "(Main)"
+    )
+
+    # --- Cuarta columna: Asignación de canales ---
+    channel_frame = ttk.LabelFrame(main_frame, text="Channel Assignment", padding="8")
+    channel_frame.grid(row=0, column=3, sticky="nsew")
+
+    ttk.Label(channel_frame, text="HFCTs HP Filter (MHz)").pack(anchor="w", pady=(0, 1))
+    spinbox_HPFilter = ttk.Spinbox(channel_frame, from_=0.001, to=50, increment=1)
+    spinbox_HPFilter.pack(fill=tk.X, pady=(0, 4))
+    spinbox_HPFilter.set(5)
+
+    def add_combo(label, values, default):
+        ttk.Label(channel_frame, text=label).pack(anchor="w", pady=(0, 1))
+        cb = ttk.Combobox(channel_frame, values=values)
+        cb.pack(fill=tk.X, pady=(0, 4))
+        cb.set(default)
+        return cb
+
+    comboImpulse = add_combo("Impulse", ["CH1", "CH2", "CH3", "CH4"], "CH1")
+    comboHFCTMain = add_combo("Main HFCT", ["CH1", "CH2", "CH3", "CH4"], "CH2")
+    comboHFCTReverse = add_combo("Reverse HFCT", ["CH1", "CH2", "CH3", "CH4"], "CH3")
+    comboAntenna = add_combo("Antenna", ["CH1", "CH2", "CH3", "CH4"], "CH4")
+
+    # --- Fila inferior: Estado y puerto ---
     bottom_frame = ttk.Frame(main_frame)
-    bottom_frame.grid(row=1, column=0, columnspan=4, sticky="ew", pady=10)
+    bottom_frame.grid(row=1, column=1, columnspan=3, sticky="ew", pady=(10, 0))
     bottom_frame.columnconfigure(0, weight=3)
     bottom_frame.columnconfigure(1, weight=1)
 
+    # Status label en la última fila, ocupando todas las columnas (columnspan=4)
     status_label = ttk.Label(
-        bottom_frame, text="No data loaded", anchor="w", justify="left", padding="10"
+        main_frame, text="No data loaded", anchor="w", justify="left", padding="10"
     )
-    status_label.grid(row=0, column=0, sticky="ew")
+    status_label.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(10, 0))
 
-    # Port selection (alineado a la derecha en la misma fila)
     port_frame = ttk.Frame(bottom_frame)
     port_frame.grid(row=0, column=1, sticky="e", padx=(10, 0))
-
     ttk.Label(port_frame, text="Port Selection:", anchor="w", justify="left").grid(
         row=0, column=0, sticky="w", padx=(0, 5)
     )
@@ -683,137 +708,8 @@ def setup_gui():
     port_selection.grid(row=0, column=1, sticky="w")
     port_selection.set(availablePorts[0])
 
-    data_label = ttk.Label(columna1, text="No Data Loaded", foreground="red")
-    data_label.pack(pady=10)
-
-    metadata_label = ttk.Label(
-        columna1, text="No Metadata Calculated", foreground="red"
-    )
-    metadata_label.pack(pady=10)
-
-    ram_label = ttk.Label(
-        columna1, text="RAM Usage: 0.00 MB", font=("Arial", 8, "bold"), anchor="center"
-    )
-    ram_label.pack(pady=0)
-
-    ttk.Separator(columna1, orient="horizontal").pack(fill=tk.X, pady=10)
-
-    # Iniciar la actualización periódica
+    # Iniciar la actualización periódica de RAM
     update_ram_display()
-
-    columna2 = ttk.Frame(main_frame, padding="5")
-    columna2.grid(row=0, column=1, sticky="nsew")
-
-    ttk.Label(
-        columna2, text="Trigger Detection Main Parameters", font=("Arial", 10, "bold")
-    ).pack(pady=5)
-
-    ttk.Label(columna2, text="Time Window HFCT (us):").pack(anchor="w")
-    spinbox_timewindow_HFCT = ttk.Spinbox(columna2, from_=0.01, to=10, increment=0.1)
-    spinbox_timewindow_HFCT.pack(fill=tk.X, pady=5)
-    spinbox_timewindow_HFCT.set(1)
-
-    ttk.Label(columna2, text="Time Window Antenna (us):").pack(anchor="w")
-    spinbox_timewindow_antenna = ttk.Spinbox(columna2, from_=0.01, to=10, increment=0.1)
-    spinbox_timewindow_antenna.pack(fill=tk.X, pady=5)
-    spinbox_timewindow_antenna.set(0.1)
-
-    ttk.Label(columna2, text="Samplig Frequency (GHz):").pack(anchor="w")
-    spinbox_sampling_frequency = ttk.Spinbox(columna2, from_=0.1, to=10, increment=0.5)
-    spinbox_sampling_frequency.pack(fill=tk.X, pady=5)
-    spinbox_sampling_frequency.set(5)
-
-    ttk.Label(columna2, text="Main PD Time Init (us):").pack(anchor="w")
-    spinbox_mainPDinit = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
-    spinbox_mainPDinit.pack(fill=tk.X, pady=5)
-    spinbox_mainPDinit.set(5)
-
-    ttk.Label(columna2, text="Main PD Time End (us):").pack(anchor="w")
-    spinbox_mainPDend = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
-    spinbox_mainPDend.pack(fill=tk.X, pady=5)
-    spinbox_mainPDend.set(50)
-
-    ttk.Label(columna2, text="Reverse PD Time Init (us):").pack(anchor="w")
-    spinbox_reversePDinit = ttk.Spinbox(columna2, from_=0, to=200, increment=5)
-    spinbox_reversePDinit.pack(fill=tk.X, pady=5)
-    spinbox_reversePDinit.set(50)
-
-    columna3 = ttk.Frame(main_frame, padding="5")
-    columna3.grid(row=0, column=2, sticky="nsew")
-
-    ttk.Label(columna3, text="Trigger Settings", font=("Arial", 10, "bold")).pack(
-        pady=5
-    )
-
-    ttk.Label(columna3, text="Main HFCT", font=("Arial", 10, "bold")).pack(anchor="w")
-    labelCH2Main = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['mainHFCT']['main']*1000} mV (Main)",
-        font=("Arial", 10),
-    )
-    labelCH2Main.pack(fill=tk.X, pady=5)
-
-    ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
-
-    ttk.Label(columna3, text="Reverse HFCT", font=("Arial", 10, "bold")).pack(
-        anchor="w"
-    )
-
-    labelCH3Reverse = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['reverseHFCT']['reverse']*1000} mV (Rev)",
-        font=("Arial", 10),
-    )
-    labelCH3Reverse.pack(fill=tk.X, pady=5)
-
-    ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
-
-    ttk.Label(columna3, text="Antenna", font=("Arial", 10, "bold")).pack(anchor="w")
-
-    labelCH4Main = ttk.Label(
-        columna3,
-        text=f"{TRIGGER_SETTINGS['antenna']['main']*1000} mV (Main)",
-        font=("Arial", 10),
-    )
-    labelCH4Main.pack(fill=tk.X, pady=5)
-
-    ttk.Separator(columna3, orient="horizontal").pack(fill=tk.X, pady=10)
-
-    columna4 = ttk.Frame(main_frame, padding="5")
-    columna4.grid(row=0, column=3, sticky="nsew")
-
-    ttk.Label(columna4, text="Channel Assignment", font=("Arial", 10, "bold")).pack(
-        pady=5
-    )
-
-    ttk.Label(columna4, text="HFCTs HP Filter (MHz)").pack(anchor="w")
-
-    spinbox_HPFilter = ttk.Spinbox(columna4, from_=0.001, to=50, increment=1)
-    spinbox_HPFilter.pack(fill=tk.X, pady=5)
-    spinbox_HPFilter.set(5)
-
-    ttk.Label(columna4, text="Impulse").pack(anchor="w")
-
-    comboImpulse = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    comboImpulse.pack(fill=tk.X, pady=5)
-    comboImpulse.set("CH1")
-
-    ttk.Label(columna4, text="Main HFCT").pack(anchor="w")
-
-    comboHFCTMain = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    comboHFCTMain.pack(fill=tk.X, pady=5)
-    comboHFCTMain.set("CH2")
-
-    ttk.Label(columna4, text="Reverse HFCT").pack(anchor="w")
-
-    comboHFCTReverse = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    comboHFCTReverse.pack(fill=tk.X, pady=5)
-    comboHFCTReverse.set("CH3")
-
-    ttk.Label(columna4, text="Antenna").pack(anchor="w")
-    comboAntenna = ttk.Combobox(columna4, values=["CH1", "CH2", "CH3", "CH4"])
-    comboAntenna.pack(fill=tk.X, pady=5)
-    comboAntenna.set("CH4")
 
     return root
 

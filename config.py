@@ -35,7 +35,7 @@ window_HFCT = 5000
 samplesToMicros = 5000
 impulseDownsample = 10000
 
-tkinterAppDim = "750x550"
+tkinterAppDim = "750x420"
 
 # Configuración de ventanas
 WINDOW_SETTINGS = {
