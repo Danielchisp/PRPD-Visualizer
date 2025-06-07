@@ -46,7 +46,7 @@ port_selection = None
 
 
 def load_data(folder):
-    global status_label, ram_label, impulse_ave_final, spinbox_HPFilter
+    global status_label, ram_label, impulse_ave_final, spinbox_BPLowcut, spinbox_HPHighcut
 
     status_label.config(
         text="Loading CH1 data... This may take a while...",
@@ -125,17 +125,20 @@ def load_data(folder):
     # Definir parámetros del filtro
     order = 3
     fs = 5e9  # Frecuencia de muestreo en Hz (ajusta si es necesario)
-    cutoff = (
-        float(spinbox_HPFilter.get()) * 1e6
-    )  # Frecuencia de corte en Hz (ajusta si es necesario)
+    lowcut = float(spinbox_BPLowcut.get()) * 1e6  # Frecuencia de corte inferior en Hz
+    highcut = float(spinbox_HPHighcut.get()) * 1e6  # Frecuencia de corte superior en Hz
 
-    # Calcular los coeficientes del filtro Butterworth pasa-altos
-    b, a = butter(order, cutoff / (0.5 * fs), btype="high", analog=False)
+    # Filtro pasaaltos para mainHFCTMainData
+    b_hp, a_hp = butter(order, lowcut / (0.5 * fs), btype="high", analog=False)
+    for col in range(1, mainHFCTMainData.shape[1], 2):
+        mainHFCTMainData[col] = filtfilt(b_hp, a_hp, mainHFCTMainData[col].values)
 
-    # Filtrar las columnas impares de mainHFCTMainData y reverseHFCTMainData
-    for df_signal in [mainHFCTMainData, reverseHFCTMainData]:
-        for col in range(1, df_signal.shape[1], 2):
-            df_signal[col] = filtfilt(b, a, df_signal[col].values)
+    # Filtro pasabanda para reverseHFCTMainData
+    b_bp, a_bp = butter(
+        order, [lowcut / (0.5 * fs), highcut / (0.5 * fs)], btype="band", analog=False
+    )
+    for col in range(1, reverseHFCTMainData.shape[1], 2):
+        reverseHFCTMainData[col] = filtfilt(b_bp, a_bp, reverseHFCTMainData[col].values)
 
     status_label.config(
         text="Data loaded successfully! Now calculating impulse average..."
@@ -266,7 +269,7 @@ def load_app_data():
     global impulseMainData, mainHFCTMainData, reverseHFCTMainData, antennaMainData, time1, time2, time3, time4
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
     global folder
-    global spinbox_HPFilter
+    global spinbox_BPLowcut
 
     CHANNEL_DICT["Impulse"] = comboImpulse.get()
     CHANNEL_DICT["Ferrite 1"] = comboHFCTMain.get()
@@ -308,7 +311,7 @@ def load_app_data():
     status_label.update()
 
     data_label.config(
-        text=f"Data Loaded:\n{os.path.basename(folder)}\nHP Filter: {spinbox_HPFilter.get()} MHz",
+        text=f"Data Loaded:\n{os.path.basename(folder)}\nHP Filter: {spinbox_BPLowcut.get()} MHz",
         foreground="green",
     )
     data_label.update()
@@ -549,7 +552,7 @@ def setup_gui():
     global comboAntenna, comboHFCTMain, comboHFCTReverse, comboImpulse
     global logo_img  # Para evitar que el recolector de basura elimine la imagen
     global port_selection
-    global spinbox_HPFilter
+    global spinbox_BPLowcut, spinbox_HPHighcut
     global tkinterAppDim
 
     root = tk.Tk()
@@ -583,6 +586,7 @@ def setup_gui():
     )
 
     # Botones principales
+    menu_buttons = []
     for text, cmd in [
         ("1. Load Data (.csv)", load_app_data),
         ("2. Set Trigger Level", trigger_detection),
@@ -596,6 +600,16 @@ def setup_gui():
         btn.pack(fill=tk.X, pady=2)
         btn.bind("<Enter>", lambda e, b=btn: b.config(cursor="hand2"))
         btn.bind("<Leave>", lambda e, b=btn: b.config(cursor=""))
+        menu_buttons.append(btn)
+
+    # --- DESACTIVADO: Vincular teclas numéricas a los botones del menú ---
+    # def on_key_press(event):
+    #     if event.char in "1234567":
+    #         idx = int(event.char) - 1
+    #         if 0 <= idx < len(menu_buttons):
+    #             menu_buttons[idx].invoke()
+    # root.bind("<Key>", on_key_press)
+    # --- FIN DESACTIVADO ---
 
     ttk.Separator(left_frame, orient="horizontal").pack(fill=tk.X, pady=8)
 
@@ -670,10 +684,19 @@ def setup_gui():
     channel_frame = ttk.LabelFrame(main_frame, text="Channel Assignment", padding="8")
     channel_frame.grid(row=0, column=3, sticky="nsew")
 
-    ttk.Label(channel_frame, text="HFCTs HP Filter (MHz)").pack(anchor="w", pady=(0, 1))
-    spinbox_HPFilter = ttk.Spinbox(channel_frame, from_=0.001, to=50, increment=1)
-    spinbox_HPFilter.pack(fill=tk.X, pady=(0, 4))
-    spinbox_HPFilter.set(5)
+    ttk.Label(channel_frame, text="HFCTs Lowcut Freq. (MHz)").pack(
+        anchor="w", pady=(0, 1)
+    )
+    spinbox_BPLowcut = ttk.Spinbox(channel_frame, from_=0.001, to=50, increment=1)
+    spinbox_BPLowcut.pack(fill=tk.X, pady=(0, 4))
+    spinbox_BPLowcut.set(5)
+
+    ttk.Label(channel_frame, text="HFCTs Highcut Freq. (MHz)").pack(
+        anchor="w", pady=(0, 1)
+    )
+    spinbox_HPHighcut = ttk.Spinbox(channel_frame, from_=0.001, to=50, increment=1)
+    spinbox_HPHighcut.pack(fill=tk.X, pady=(0, 4))
+    spinbox_HPHighcut.set(1000)
 
     def add_combo(label, values, default):
         ttk.Label(channel_frame, text=label).pack(anchor="w", pady=(0, 1))
@@ -717,7 +740,7 @@ def setup_gui():
 def save_metadata():
     global df, impulse_ave_final, time1, folder
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
-    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_HPFilter
+    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_BPLowcut
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
     global labelCH2Main, labelCH3Reverse, labelCH4Main
     global status_label
@@ -757,7 +780,7 @@ def save_metadata():
         gui_params["spinbox_mainPDinit"] = spinbox_mainPDinit.get()
         gui_params["spinbox_mainPDend"] = spinbox_mainPDend.get()
         gui_params["spinbox_reversePDinit"] = spinbox_reversePDinit.get()
-        gui_params["spinbox_HPFilter"] = spinbox_HPFilter.get()
+        gui_params["spinbox_BPLowcut"] = spinbox_BPLowcut.get()
 
         # Comboboxes
         gui_params["comboImpulse"] = comboImpulse.get()
@@ -791,7 +814,7 @@ def save_metadata():
 def load_metadata():
     global df, impulse_ave_final, time1, scatter_traces, folder
     global spinbox_timewindow_HFCT, spinbox_timewindow_antenna, spinbox_sampling_frequency
-    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_HPFilter
+    global spinbox_mainPDinit, spinbox_mainPDend, spinbox_reversePDinit, spinbox_BPLowcut
     global comboImpulse, comboHFCTMain, comboHFCTReverse, comboAntenna
     global labelCH2Main, labelCH3Reverse, labelCH4Main
     global status_label, metadata_label
@@ -853,7 +876,7 @@ def load_metadata():
             spinbox_mainPDinit.set(gui_params.get("spinbox_mainPDinit", "5"))
             spinbox_mainPDend.set(gui_params.get("spinbox_mainPDend", "50"))
             spinbox_reversePDinit.set(gui_params.get("spinbox_reversePDinit", "50"))
-            spinbox_HPFilter.set(gui_params.get("spinbox_HPFilter", "5"))
+            spinbox_BPLowcut.set(gui_params.get("spinbox_BPLowcut", "5"))
             # Comboboxes
             comboImpulse.set(gui_params.get("comboImpulse", "CH1"))
             comboHFCTMain.set(gui_params.get("comboHFCTMain", "CH2"))

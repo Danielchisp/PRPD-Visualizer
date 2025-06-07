@@ -62,7 +62,7 @@ def plot_time_fft_single(selected_data):
     return time_fig, fft_fig
 
 
-def plot_time_fft_multiple(selected_data, xValue, yValue):
+def plot_class_map(selected_data, xValue, yValue):
 
     labelDict = {
         "Energy": "Energy (V^2)",
@@ -129,37 +129,35 @@ def plot_time_fft_multiple(selected_data, xValue, yValue):
         fft_mas_distante /= max(abs(fft_mas_distante))
 
         freqs = selected_data["freqs"].iloc[0]
-        fft_fig = {
-            "data": [
-                go.Scatter(
-                    x=freqs,
-                    y=fft_promedio,
-                    mode="lines",
-                    line=dict(color="red"),
-                    name="Average",
-                ),
-                go.Scatter(
-                    x=freqs,
-                    y=fft_mas_distante,
-                    mode="lines",
-                    line=dict(color="black", dash="dot"),
-                    name="Reference",
-                ),
-            ],
-            "layout": go.Layout(
-                title=dict(
-                    text="Frequency Resolved PD",
-                    font=dict(size=14),
-                ),
-                xaxis=dict(
-                    title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]
-                ),
-                yaxis=dict(title="(a.u)"),
+    fft_fig = {
+        "data": [
+            go.Scatter(
+                x=freqs,
+                y=fft_promedio,
+                mode="lines",
+                line=dict(color="red"),
+                name="Average",
             ),
-        }
+            go.Scatter(
+                x=freqs,
+                y=fft_mas_distante,
+                mode="lines",
+                line=dict(color="black", dash="dot"),
+                name="Reference",
+            ),
+        ],
+        "layout": go.Layout(
+            title=dict(
+                text="Frequency Resolved PD",
+                font=dict(size=14),
+            ),
+            xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"].iloc[0]]),
+            yaxis=dict(title="(a.u)"),
+        ),
+    }
 
     # Generar el gráfico de scatter (time_fig) siempre
-    time_fig = {
+    class_map_fig = {
         "data": [
             go.Scattergl(
                 x=selected_data[xValue].tolist(),
@@ -189,7 +187,7 @@ def plot_time_fft_multiple(selected_data, xValue, yValue):
         ),
     }
 
-    return time_fig, fft_fig
+    return class_map_fig, fft_fig
 
 
 def plot_selected_PRPD_single(selected_data, stored_layout, time, impulse):
