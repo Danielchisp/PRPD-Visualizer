@@ -108,31 +108,37 @@ def build_export_dataframe(filtered_df, value_key):
 
     # Extraer los parámetros
     vpp_list = filtered_df["Vpp"].tolist()
+    impulse_num = filtered_df["impulseNum"].tolist()
     t_peak_list = filtered_df["x"].tolist()
     v_peak_list = filtered_df["y"].tolist()
     id_list = filtered_df["id"].tolist()
+    channel = filtered_df["channel"].tolist()
+    type_list = filtered_df["type"].tolist()
 
-    # Construir la matriz de salida: cada columna es una señal
-    data_matrix = []
-    # Fila 0: Peak to Peak Voltage
-    data_matrix.append(["Peak to Peak Voltage"] + vpp_list)
-    # Fila 1: t_peak
-    data_matrix.append(["t_peak"] + t_peak_list)
-    # Fila 2: V_peak
-    data_matrix.append(["V_peak"] + v_peak_list)
-    # Fila 3: id
-    data_matrix.append(["id"] + id_list)
+    # Determinar la longitud máxima de los datos de señal
+    max_len = max(len(v) for v in values_clean)
 
-    # Ahora, para los datos de la señal/fft, cada fila será un punto de la señal
-    max_len = max(len(arr) for arr in values_clean) if values_clean else 0
+    # Construir las filas de parámetros
+    param_rows = [
+        ["Peak to Peak Voltage"] + vpp_list,
+        ["t_peak"] + t_peak_list,
+        ["V_peak"] + v_peak_list,
+        ["id"] + id_list,
+        ["impulseNum"] + impulse_num,
+        ["channel"] + channel,
+        ["type"] + type_list,
+    ]
+
+    # Construir las filas de datos de señal/fft
+    signal_rows = []
     for i in range(max_len):
-        row = [f"point_{i}"]
-        for arr in values_clean:
-            if i < len(arr):
-                row.append(arr[i])
-            else:
-                row.append("")
-        data_matrix.append(row)
+        row = [f"{value_key}[{i}]"]
+        for v in values_clean:
+            row.append(v[i] if i < len(v) else np.nan)
+        signal_rows.append(row)
+
+    # Unir todo
+    data_matrix = param_rows + signal_rows
 
     # Construir DataFrame
     col_names = ["Parameter"] + [f"ID: {i}" for i in id_list]

@@ -133,12 +133,10 @@ def load_data(folder):
     for col in range(1, mainHFCTMainData.shape[1], 2):
         mainHFCTMainData[col] = filtfilt(b_hp, a_hp, mainHFCTMainData[col].values)
 
-    # Filtro pasabanda para reverseHFCTMainData
-    b_bp, a_bp = butter(
-        order, [lowcut / (0.5 * fs), highcut / (0.5 * fs)], btype="band", analog=False
-    )
+    # Filtro pasabajos para reverseHFCTMainData
+    b_lp, a_lp = butter(order, highcut / (0.5 * fs), btype="low", analog=False)
     for col in range(1, reverseHFCTMainData.shape[1], 2):
-        reverseHFCTMainData[col] = filtfilt(b_bp, a_bp, reverseHFCTMainData[col].values)
+        reverseHFCTMainData[col] = filtfilt(b_lp, a_lp, reverseHFCTMainData[col].values)
 
     status_label.config(
         text="Data loaded successfully! Now calculating impulse average..."
@@ -481,7 +479,7 @@ def toggle_visualize_button(state):
         visualize_btn.config(state=new_state)
 
 
-def run_dash_app(df, scatter_traces, time1, impulse_ave_final, port):
+def run_dash_app(df, scatter_traces, time1, impulse_ave_final, port, folder):
     # NOTA: Para evitar el KeyError: 'customdata' en app.py,
     # asegúrate de que el callback de Dash verifique si 'customdata' existe en clickData["points"][0]
     # Ejemplo en app.py:
@@ -489,7 +487,7 @@ def run_dash_app(df, scatter_traces, time1, impulse_ave_final, port):
     #       selected_id = clickData["points"][0]["customdata"][3]
     #   else:
     #       selected_id = None
-    create_dash_app(df, scatter_traces, time1, impulse_ave_final, host, port)
+    create_dash_app(df, scatter_traces, time1, impulse_ave_final, host, port, folder)
 
 
 def visualize_data():
@@ -510,7 +508,7 @@ def visualize_data():
     # Crear nuevo proceso y pasar los datos como argumentos
     dash_process = Process(
         target=run_dash_app,
-        args=(df, scatter_traces, time1, impulse_ave_final, port),
+        args=(df, scatter_traces, time1, impulse_ave_final, port, folder),
     )
     dash_process.start()
 
@@ -897,6 +895,7 @@ def load_metadata():
         print(f"Error al cargar archivos: {e}")
 
     visualize_data()
+
 
 def check_dash_process():
     """Verifica si el hilo de Dash sigue activo"""

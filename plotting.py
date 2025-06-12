@@ -69,7 +69,13 @@ def plot_time_fft_multiple(selected_data_list):
     fft_traces = []
 
     # Limitar a un máximo de 50 señales
-    max_signals = 10
+    max_signals = 30
+    if len(selected_data_list) > max_signals:
+        rng = np.random.default_rng()
+        indices = rng.choice(len(selected_data_list), size=max_signals, replace=False)
+        data_list = [selected_data_list[i] for i in indices]
+    else:
+        data_list = selected_data_list
     data_list = selected_data_list[:max_signals]
 
     # Obtener la frecuencia de muestreo
