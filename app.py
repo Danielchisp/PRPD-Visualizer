@@ -12,6 +12,7 @@ from plotting import (  # Custom plotting functions imported from the 'plotting'
     create_scatter_layout,
     plot_class_map,
     plot_time_fft_single,
+    plot_time_fft_multiple,
     plot_selected_PRPD_single,
     plot_selected_PRPD_multiple,
 )
@@ -126,7 +127,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                             dcc.Tabs(
                                 [
                                     # Tab for the PD Data Analyzer
-                                    dcc.Tab(
+                                    dcc.Tab(  # Graphs
                                         label="PD Data Analyzer",
                                         children=[
                                             html.Div(
@@ -444,57 +445,6 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                     # Time Series and FFT Plots Section
                                                     html.Div(
                                                         [
-                                                            # Time Series Plot with Dropdowns
-                                                            html.Div(
-                                                                [
-                                                                    # First Dropdown (generic options)
-                                                                    dcc.Dropdown(
-                                                                        id="dropdown-x-axis",
-                                                                        options=classMapVariables,
-                                                                        value="Vpp",
-                                                                        placeholder="x-axis",
-                                                                        style={
-                                                                            "marginBottom": "10px"
-                                                                        },
-                                                                    ),
-                                                                    # Second Dropdown (generic options)
-                                                                    dcc.Dropdown(
-                                                                        id="dropdown-y-axis",
-                                                                        options=classMapVariables,
-                                                                        value="Energy",
-                                                                        placeholder="y-axis",
-                                                                        style={
-                                                                            "marginBottom": "20px"
-                                                                        },
-                                                                    ),
-                                                                    dcc.Graph(
-                                                                        id="class-map-graph",
-                                                                        figure={
-                                                                            "data": [],
-                                                                            "layout": [],
-                                                                        },
-                                                                        config={
-                                                                            "displayModeBar": True,
-                                                                            "toImageButtonOptions": {
-                                                                                "format": "png",
-                                                                                "filename": "time_series",
-                                                                                "height": 600,
-                                                                                "width": 1000,
-                                                                                "scale": 1,
-                                                                            },
-                                                                        },
-                                                                    ),
-                                                                ],
-                                                                style={
-                                                                    "marginBottom": "20px",
-                                                                    "borderRadius": "8px",
-                                                                    "padding": "15px",
-                                                                    "backgroundColor": "#fefefe",
-                                                                    "border": "1px solid #ccc",
-                                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
-                                                                },
-                                                            ),
-                                                            # FFT Plot
                                                             dcc.Tabs(
                                                                 [
                                                                     dcc.Tab(  # Temporal Signal Tab
@@ -563,6 +513,57 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                                     ),
                                                                 ]
                                                             ),
+                                                            # Class Map
+                                                            html.Div(
+                                                                [
+                                                                    # First Dropdown (generic options)
+                                                                    dcc.Dropdown(
+                                                                        id="dropdown-x-axis",
+                                                                        options=classMapVariables,
+                                                                        value="Vpp",
+                                                                        placeholder="x-axis",
+                                                                        style={
+                                                                            "marginBottom": "10px"
+                                                                        },
+                                                                    ),
+                                                                    # Second Dropdown (generic options)
+                                                                    dcc.Dropdown(
+                                                                        id="dropdown-y-axis",
+                                                                        options=classMapVariables,
+                                                                        value="Energy",
+                                                                        placeholder="y-axis",
+                                                                        style={
+                                                                            "marginBottom": "20px"
+                                                                        },
+                                                                    ),
+                                                                    dcc.Graph(
+                                                                        id="class-map-graph",
+                                                                        figure={
+                                                                            "data": [],
+                                                                            "layout": [],
+                                                                        },
+                                                                        config={
+                                                                            "displayModeBar": True,
+                                                                            "toImageButtonOptions": {
+                                                                                "format": "png",
+                                                                                "filename": "time_series",
+                                                                                "height": 600,
+                                                                                "width": 1000,
+                                                                                "scale": 1,
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                ],
+                                                                style={
+                                                                    "marginBottom": "20px",
+                                                                    "borderRadius": "8px",
+                                                                    "padding": "15px",
+                                                                    "backgroundColor": "#fefefe",
+                                                                    "border": "1px solid #ccc",
+                                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                                },
+                                                            ),
+                                                            # Time & FFT Plot
                                                         ],
                                                         style={
                                                             "width": "50%",
@@ -578,6 +579,91 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
                                                     "justifyContent": "space-between",
                                                 },
                                             ),
+                                        ],
+                                    ),
+                                    
+                                    dcc.Tab(# Métricas y Gráficos Extra
+                                        label="Plots & Metrics",
+                                        children=[
+                                            html.Div(
+                                                [
+                                                    html.Div(
+                                                        [
+                                                            dcc.Dropdown(
+                                                                id="division-dropdown",
+                                                                options=[
+                                                                    {'label': str(i), 'value': str(i)} for i in range(1, 21)
+                                                                ],
+                                                                value='5',
+                                                                clearable=False
+                                                            ),
+                                                            dcc.Graph(
+                                                                id="extra-plot-1",
+                                                                figure={"data": [], "layout": []},
+                                                                config={
+                                                                    "displayModeBar": True,
+                                                                    "toImageButtonOptions": {
+                                                                        "format": "png",
+                                                                        "filename": "extra_plot_1",
+                                                                        "height": 600,
+                                                                        "width": 1000,
+                                                                        "scale": 1,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        ],
+                                                        style={
+                                                            "marginBottom": "20px",
+                                                            "borderRadius": "8px",
+                                                            "padding": "15px",
+                                                            "backgroundColor": "#fefefe",
+                                                            "border": "1px solid #ccc",
+                                                            "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                            "width": "70%",
+                                                            "boxSizing": "border-box",
+                                                            "marginLeft": "auto",
+                                                            "marginRight": "auto",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            dcc.Graph(
+                                                                id="extra-plot-2",
+                                                                figure={"data": [], "layout": []},
+                                                                config={
+                                                                    "displayModeBar": True,
+                                                                    "toImageButtonOptions": {
+                                                                        "format": "png",
+                                                                        "filename": "extra_plot_2",
+                                                                        "height": 600,
+                                                                        "width": 1000,
+                                                                        "scale": 1,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        ],
+                                                        style={
+                                                            "marginBottom": "20px",
+                                                            "borderRadius": "8px",
+                                                            "padding": "15px",
+                                                            "backgroundColor": "#fefefe",
+                                                            "border": "1px solid #ccc",
+                                                            "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                            "width": "70%",
+                                                            "boxSizing": "border-box",
+                                                            "marginLeft": "auto",
+                                                            "marginRight": "auto",
+                                                        },
+                                                    ),
+                                                ],
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "column",
+                                                    "alignItems": "stretch",
+                                                    "fontFamily": "Roboto, sans-serif",
+                                                    "width": "100%",
+                                                },
+                                            )
                                         ],
                                     ),
                                     dcc.Tab(  # User Manual
@@ -634,41 +720,201 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
         clickDataClass,
         selectedDataClass,
     ):
-
         ctx = dash.callback_context  # Get trigger context
         temporal_fig, fft_fig = [], []
 
-        if not ctx.triggered:
-            # Default selection logic
-            selected_id = df["id"].iloc[0]
-            # print(f"Default selected id: {selected_id}")
-            selected_data = df[df["id"] == selected_id].iloc[0]
-            # print(f"Default selected data: {selected_data}")
-            temporal_fig, fft_fig = plot_time_fft_single(selected_data)
-        else:
-
-            triggered_id = ctx.triggered[0]["prop_id"]
-
-            if "clickData" in triggered_id and clickDataScatter:
-                # Handle click interaction
-                selected_id = clickDataScatter["points"][0]["customdata"][3]
-                selected_data = df[df["id"] == selected_id].iloc[0]
-                temporal_fig, fft_fig = plot_time_fft_single(selected_data)
-
-            elif "clickData" in triggered_id and clickDataClass:
-                # Handle click interaction on class map
-                selected_id = clickDataClass["points"][0]["customdata"][0]
-                selected_data = df[df["id"] == selected_id].iloc[0]
-                temporal_fig, fft_fig = plot_time_fft_single(selected_data)
-
-            else:
-                # Default fallback
+        try:
+            if not ctx.triggered:
+                # Default selection logic
                 selected_id = df["id"].iloc[0]
                 selected_data = df[df["id"] == selected_id].iloc[0]
                 temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+            else:
+                triggered_id = ctx.triggered[0]["prop_id"]
 
-        return temporal_fig, fft_fig
+                if triggered_id == "scatter-plot.clickData" and clickDataScatter:
+                    # Handle click interaction
+                    selected_id = clickDataScatter["points"][0]["customdata"][3]
+                    selected_data = df[df["id"] == selected_id].iloc[0]
+                    temporal_fig, fft_fig = plot_time_fft_single(selected_data)
 
+                elif triggered_id == "scatter-plot.selectedData" and selectedDataScatter:
+                    # Handle selection box interaction on scatter plot
+                    selected_ids = [
+                        pt["customdata"][3] for pt in selectedDataScatter["points"]
+                    ]
+                    if len(selected_ids) == 1:
+                        selected_data = df[df["id"] == selected_ids[0]].iloc[0]
+                        temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+                    elif len(selected_ids) > 1:
+                        selected_data = df[df["id"].isin(selected_ids)]
+                        temporal_fig, fft_fig = plot_time_fft_multiple(
+                            selected_data.to_dict("records")
+                        )
+                    else:
+                        selected_id = df["id"].iloc[0]
+                        selected_data = df[df["id"] == selected_id].iloc[0]
+                        temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+
+                elif triggered_id == "class-map-graph.clickData" and clickDataClass:
+                    # Handle click interaction on class map
+                    selected_id = clickDataClass["points"][0]["customdata"][0]
+                    selected_data = df[df["id"] == selected_id].iloc[0]
+                    temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+
+                elif triggered_id == "class-map-graph.selectedData" and selectedDataClass:
+                    # Handle selection box interaction on class map
+                    selected_ids = [
+                        pt["customdata"][0] for pt in selectedDataClass["points"]
+                    ]
+                    if len(selected_ids) == 1:
+                        selected_data = df[df["id"] == selected_ids[0]].iloc[0]
+                        temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+                    elif len(selected_ids) > 1:
+                        selected_data = df[df["id"].isin(selected_ids)]
+                        temporal_fig, fft_fig = plot_time_fft_multiple(
+                            selected_data.to_dict("records")
+                        )
+                    else:
+                        selected_id = df["id"].iloc[0]
+                        selected_data = df[df["id"] == selected_id].iloc[0]
+                        temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+
+                else:
+                    # Default fallback
+                    selected_id = df["id"].iloc[0]
+                    selected_data = df[df["id"] == selected_id].iloc[0]
+                    temporal_fig, fft_fig = plot_time_fft_single(selected_data)
+
+            # Asegura que siempre se retorna una tupla de dos elementos (figuras)
+            if not isinstance(temporal_fig, (list, dict)):
+                temporal_fig = []
+            if not isinstance(fft_fig, (list, dict)):
+                fft_fig = []
+            return temporal_fig, fft_fig
+        except Exception as e:
+            print(f"Error in update_temporal_fft_plots: {e}")
+            # Devuelve figuras vacías para evitar errores en Dash
+            return {}, {}
+
+    @app.callback(
+        Output("extra-plot-1", "figure"),
+        [Input("class-map-graph", "selectedData"), Input("division-dropdown", "value")],
+    )
+    def update_extra_plot_1(selectedData, num_bins):
+        num_bins = int(num_bins)  # Convert to integer
+        # Si no hay selección, usar todos los datos
+        if selectedData and "points" in selectedData and selectedData["points"]:
+            selected_ids = [pt["customdata"][0] for pt in selectedData["points"]]
+            filtered_df = df[df["id"].isin(selected_ids)]
+        else:
+            filtered_df = df
+
+        # Verifica que la columna sea 'Vpp'
+        y_col = "y" if "y" in filtered_df.columns else filtered_df.columns[0]
+        y = np.array(filtered_df[y_col].values)
+        y_max = np.max(np.abs(y)) if y.size > 0 else 0
+        if y.size > 0 and y_max != 0:
+            y_norm = y / y_max
+        else:
+            y_norm = y
+        time_dps = "x" if "x" in filtered_df.columns else None
+
+        # Si no existe la columna 'impulse', usar el índice como número de impulso
+        if time_dps:
+            x = np.array(filtered_df[time_dps].values)
+        else:
+            x = np.arange(len(filtered_df))
+
+        # Definir el número de bins (puedes hacerlo configurable)
+
+        # Calcular los límites de los bins
+        if x.size > 0:
+            x_min, x_max = np.min(x), np.max(x)
+            bins = np.linspace(x_min, x_max, num_bins + 1)
+        else:
+            bins = np.linspace(0, 1, num_bins + 1)
+
+        # Inicializar listas para las métricas por bin
+        bin_centers = []
+        vpp_means = []
+        energy_means = []
+        num_signals = []
+
+        # Para cada bin, calcular métricas
+        for i in range(num_bins):
+            bin_mask = (x >= bins[i]) & (x < bins[i + 1])
+            bin_df = filtered_df[bin_mask]
+            if not bin_df.empty:
+                bin_centers.append((bins[i] + bins[i + 1]) / 2)
+                vpp_means.append(bin_df["Vpp"].mean() * 1e3)  # mV
+                energy_means.append(bin_df["Energy"].mean())  # mV^2
+                num_signals.append(len(bin_df))
+            else:
+                bin_centers.append((bins[i] + bins[i + 1]) / 2)
+                vpp_means.append(0)
+                energy_means.append(0)
+                num_signals.append(0)
+
+        # Convertir a np.array para graficar
+        bin_centers = np.array(bin_centers)
+        vpp_means = np.array(vpp_means)
+        energy_means = np.array(energy_means)
+        num_signals = np.array(num_signals)
+
+        # Normalizar para graficar si no son todos ceros y obtener máximos
+        vpp_max = np.max(vpp_means) if np.any(vpp_means) else 0
+        energy_max = np.max(energy_means) if np.any(energy_means) else 0
+        num_signals_max = np.max(num_signals) if np.any(num_signals) else 0
+
+        vpp_norm = vpp_means / vpp_max if vpp_max else vpp_means
+        energy_norm = energy_means / energy_max if energy_max else energy_means
+        num_signals_norm = num_signals / num_signals_max if num_signals_max else num_signals
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=bin_centers,
+            y=vpp_norm,
+            mode="lines+markers",
+            marker=dict(color="#185a9d", size=8),
+            line=dict(color="#185a9d", width=2),
+            name=f"Mean Vpp (mV) (max={vpp_max:.2f})" if vpp_max else "Mean Vpp (mV)"
+        ))
+        fig.add_trace(go.Scatter(
+            x=bin_centers,
+            y=energy_norm,
+            mode="lines+markers",
+            marker=dict(color="#b71c1c", size=8),
+            line=dict(color="#b71c1c", width=2),
+            name=f"Mean Energy (mV²) (max={energy_max:.2f})" if energy_max else "Mean Energy (mV²)"
+        ))
+        fig.add_trace(go.Scatter(
+            x=bin_centers,
+            y=num_signals_norm,
+            mode='lines+markers',
+            marker=dict(color="green", size=8),
+            line=dict(color="green", width=2),
+            name=f"Num. of Discharges (max={num_signals_max})" if num_signals_max else "Num. of Discharges",
+        ))
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y_norm,
+            mode='markers',
+            marker=dict(color="black", size=8),
+            line=dict(color="black", width=2),
+            name=f"Signal Data (max={y_max:.2f})" if y_max else "Signal Data",
+        ))
+        # Añadir eje secundario para el número de descargas
+        fig.update_layout(
+            yaxis=dict(title="Normalized Metrics"),
+            title="",
+            xaxis_title="Time (us)",
+            template="simple_white",
+            margin=dict(l=40, r=20, t=50, b=40),
+            height=400
+        )
+        return fig
+    
     @app.callback(
         [Output("class-map-graph", "figure")],
         [
@@ -719,7 +965,6 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port):
 
         return [class_map_fig]
 
-    # Callback for updating the scatter plot based on time-series interaction
     @app.callback(
         Output("scatter-plot-selected", "figure"),
         Input("class-map-graph", "clickData"),

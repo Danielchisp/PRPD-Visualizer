@@ -1,9 +1,7 @@
 import numpy as np
 from scipy.stats import gaussian_kde
 import plotly.graph_objects as go
-
-
-import plotly.graph_objs as go
+from config import WINDOW_SETTINGS
 
 
 def create_scatter_layout():
@@ -55,6 +53,85 @@ def plot_time_fft_single(selected_data):
                 font=dict(size=16),  # Tamaño de la fuente
             ),
             xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"]]),
+            yaxis=dict(title="(a.u)"),
+        ),
+    }
+
+    return time_fig, fft_fig
+
+
+def plot_time_fft_multiple(selected_data_list):
+    """
+    selected_data_list: list of dicts, each dict with keys: 't', 'signal', 'freqs', 'fft_values', 'fft_lim'
+    All signals will be interpolated to a common time vector based on their original length and the sampling frequency.
+    """
+    time_traces = []
+    fft_traces = []
+
+    # Limitar a un máximo de 50 señales
+    max_signals = 10
+    data_list = selected_data_list[:max_signals]
+
+    # Obtener la frecuencia de muestreo
+    fs = WINDOW_SETTINGS["fs"]
+
+    # Determinar el largo máximo de las señales
+    max_len = max(len(data["signal"]) for data in data_list)
+    # Crear un vector de tiempo común en us
+    t_common = np.arange(max_len) / fs * 1e6
+
+    for idx, data in enumerate(data_list):
+        signal = data["signal"]
+        # Vector de tiempo original en us
+        t_orig = np.arange(len(signal)) / fs * 1e6
+        # Interpolar la señal al vector de tiempo común
+        timeSignal = signal / max(abs(signal))
+        timeSignal_interp = np.interp(t_common, t_orig, timeSignal)
+        fft_values = data["fft_values"] / max(abs(data["fft_values"]))
+        time_traces.append(
+            go.Scatter(
+                x=t_common,
+                y=timeSignal_interp,
+                mode="lines",
+                line=dict(color="blue", width=1),
+                name=f"Signal {idx+1}",
+                showlegend=False,
+            )
+        )
+        fft_traces.append(
+            go.Scatter(
+                x=data["freqs"],
+                y=fft_values,
+                mode="lines",
+                line=dict(color="red", width=1),
+                name=f"FFT {idx+1}",
+                showlegend=False,
+            )
+        )
+
+    # Use the fft_lim of the first element (assume all have same range)
+    fft_lim = data_list[0]["fft_lim"] if data_list else None
+
+    time_fig = {
+        "data": time_traces,
+        "layout": go.Layout(
+            title=dict(
+                text="Time Resolved PD (Multiple)",
+                font=dict(size=16),
+            ),
+            xaxis=dict(title="Time (us)"),
+            yaxis=dict(title="(a.u)"),
+        ),
+    }
+
+    fft_fig = {
+        "data": fft_traces,
+        "layout": go.Layout(
+            title=dict(
+                text="Frequency Resolved PD (Multiple)",
+                font=dict(size=16),
+            ),
+            xaxis=dict(title="Frequency", range=[0, fft_lim]),
             yaxis=dict(title="(a.u)"),
         ),
     }
@@ -193,15 +270,18 @@ def plot_class_map(selected_data, xValue, yValue):
 def plot_selected_PRPD_single(selected_data, stored_layout, time, impulse):
     xValues = np.array(selected_data["x"].tolist())
     yValues = np.array(selected_data["y"].tolist())
+    ids = np.array(selected_data["id"].tolist())
 
     PRPD_single_fig = {
         "data": [
-            go.Scatter(
+            go.Scattergl(
                 x=xValues,
                 y=yValues,
                 mode="markers",
                 line=dict(color="blue"),
                 name="Selected Data",
+                customdata=np.stack((ids,), axis=-1),
+                hovertemplate="<b>ID:</b> %{customdata[0]}<br>",
             ),
             go.Scatter(
                 x=time,
@@ -220,6 +300,7 @@ def plot_selected_PRPD_single(selected_data, stored_layout, time, impulse):
 def plot_selected_PRPD_multiple(selected_data, stored_layout, time, impulse):
     xValues = np.array(selected_data["x"].tolist())
     yValues = np.array(selected_data["y"].tolist())
+    ids = np.array(selected_data["id"].tolist())
 
     # Calcular la densidad de puntos usando un histograma 2D
 
@@ -245,6 +326,8 @@ def plot_selected_PRPD_multiple(selected_data, stored_layout, time, impulse):
                     line=dict(width=0.5, color="DarkSlateGrey"),
                 ),
                 name="Selected Data",
+                customdata=np.stack((ids,), axis=-1),
+                hovertemplate="<b>ID:</b> %{customdata[0]}<br>",
             ),
             go.Scattergl(
                 x=time,

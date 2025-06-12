@@ -896,6 +896,7 @@ def load_metadata():
     except Exception as e:
         print(f"Error al cargar archivos: {e}")
 
+    visualize_data()
 
 def check_dash_process():
     """Verifica si el hilo de Dash sigue activo"""
