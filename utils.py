@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import signal
 
 from config import WINDOW_SETTINGS
+import os
 
 
 def get_folder():
@@ -145,3 +146,25 @@ def build_export_dataframe(filtered_df, value_key):
     outputDF = pd.DataFrame(data_matrix, columns=col_names)
 
     return outputDF
+
+
+def load_channel_data(status_label, channel_name, folder, chunk_size=5000):
+    file_path = os.path.join(folder, channel_name + ".csv")
+    # Contar filas totales para progreso
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        for i, _ in enumerate(f):
+            pass
+        total_rows = i + 1
+    rows_to_read = total_rows - 25 if total_rows > 25 else 0
+
+    chunks = []
+    rows_read = 0
+    for chunk in pd.read_csv(file_path, header=None, skiprows=25, chunksize=chunk_size):
+        chunks.append(chunk)
+        rows_read += len(chunk)
+        percent = (rows_read / rows_to_read) * 100 if rows_to_read else 100
+        status_label.config(
+            text=f"Cargando {channel_name}... {rows_read}/{rows_to_read} filas ({percent:.1f}%)"
+        )
+        status_label.update()
+    return pd.concat(chunks, ignore_index=True)

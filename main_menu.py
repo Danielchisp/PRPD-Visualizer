@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 from multiprocessing import Process, freeze_support
 from app import create_dash_app
-from utils import get_folder
+from utils import get_folder, load_channel_data
 from data_processing import process_data, create_scatter_traces
 import psutil
 import pandas as pd
@@ -44,22 +44,61 @@ time1, time2, time3, time4 = None, None, None, None
 ram_label, metadata_label = None, None
 port_selection = None
 
-
-def load_data(folder):
-    global status_label, ram_label, impulse_ave_final, spinbox_BPLowcut, spinbox_HPHighcut
-
+def calculate_impulse_ave():
+    
+    global status_label, impulse_ave_final, time1
+    
+    folder = get_folder()    
+    
     status_label.config(
         text="Loading CH1 data... This may take a while...",
     )
     status_label.update()
-    impulseMainData = pd.read_csv(
-        folder + "\\" + CHANNEL_DICT["Impulse"] + ".csv", header=None, skiprows=25
-    )
+    # Leer el archivo CSV por tramos para actualizar el status_label
+
+    impulseMainData = load_channel_data(status_label, CHANNEL_DICT["Impulse"], folder)
+
     update_ram_display()
     status_label.config(text="CH1 loaded")
     status_label.update()
 
     print("CH1 loaded")
+    
+    status_label.config(
+        text="Data loaded successfully!"
+    )
+    status_label.update()
+    status_label.config(
+        text="Calculating impulse average... This may take a while...",
+    )
+    status_label.update()
+    
+    impulsesNum = int(len(impulseMainData.columns) / 2)
+    
+    samples = impulseMainData.shape[0]
+    totalTimeus = (samples/WINDOW_SETTINGS['fs'])*1e6
+
+    impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
+    impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
+    impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
+    # Exportar impulse_ave_final como .npy en la carpeta seleccionada
+    np.save(os.path.join(folder, "impulse_ave_final.npy"), impulse_ave_final)
+
+    time1 = np.linspace(0, totalTimeus, len(impulse_ave_final))
+    np.save(os.path.join(folder, "time1.npy"), time1)
+    
+    status_label.config(
+        text="Impulse average calculated successfully!",
+    )
+    status_label.update()
+
+    return impulseMainData
+
+
+def load_data(folder):
+    global status_label, ram_label, spinbox_BPLowcut, spinbox_HPHighcut
+    
+    impulseMainData = calculate_impulse_ave()
 
     status_label.config(
         text="Loading CH2 data... This may take a while...",
@@ -139,15 +178,9 @@ def load_data(folder):
         reverseHFCTMainData[col] = filtfilt(b_lp, a_lp, reverseHFCTMainData[col].values)
 
     status_label.config(
-        text="Data loaded successfully! Now calculating impulse average..."
+        text="Data loaded successfully!"
     )
     status_label.update()
-
-    impulsesNum = int(len(impulseMainData.columns) / 2)
-
-    impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
-    impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
-    impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
 
     return (
         impulseMainData,
@@ -587,27 +620,19 @@ def setup_gui():
     menu_buttons = []
     for text, cmd in [
         ("1. Load Data (.csv)", load_app_data),
-        ("2. Set Trigger Level", trigger_detection),
-        ("3. Calculate TRPD Metadata", calculate_metadata),
-        ("4. Save TRPD Metadata", save_metadata),
-        ("5. Load TRPD Metadata", load_metadata),
-        ("6. Visualize Data", visualize_data),
-        ("7. Salir", exit_app),
+        ("2. Calculate Impulse Average", calculate_impulse_ave),
+        ("3. Set Trigger Level", trigger_detection),
+        ("4. Calculate TRPD Metadata", calculate_metadata),
+        ("5. Save TRPD Metadata", save_metadata),
+        ("6. Load TRPD Metadata", load_metadata),
+        ("7. Visualize Data", visualize_data),
+        ("8. Salir", exit_app),
     ]:
         btn = ttk.Button(left_frame, text=text, command=cmd)
         btn.pack(fill=tk.X, pady=2)
         btn.bind("<Enter>", lambda e, b=btn: b.config(cursor="hand2"))
         btn.bind("<Leave>", lambda e, b=btn: b.config(cursor=""))
         menu_buttons.append(btn)
-
-    # --- DESACTIVADO: Vincular teclas numéricas a los botones del menú ---
-    # def on_key_press(event):
-    #     if event.char in "1234567":
-    #         idx = int(event.char) - 1
-    #         if 0 <= idx < len(menu_buttons):
-    #             menu_buttons[idx].invoke()
-    # root.bind("<Key>", on_key_press)
-    # --- FIN DESACTIVADO ---
 
     ttk.Separator(left_frame, orient="horizontal").pack(fill=tk.X, pady=8)
 

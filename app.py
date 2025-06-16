@@ -20,6 +20,7 @@ classMapVariables = [
     {"label": "Apparent Charge", "value": "Qapp"},
     {"label": "Equivalent Time", "value": "T2"},
     {"label": "Equivalent Frequency", "value": "W2"},
+    {"label": "Time of Occurrence", "value": "x"},
 ]
 
 
@@ -35,7 +36,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
     # Initialization of the Dash application
     app = dash.Dash(
         __name__,
-        title="TRPD Visualizer",
+        title="TRPD App",
         external_stylesheets=[dbc.themes.BOOTSTRAP],  # NUEVO: Bootstrap theme
     )
 
@@ -52,7 +53,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                 [
                                     # Main title of the application
                                     html.H1(
-                                        "TRPD Pattern Visualizer",
+                                        "Transient - Resolved Partial Discharge Analyzer App",
                                         style={
                                             "textAlign": "left",
                                             "fontFamily": "Roboto, sans-serif",
@@ -69,7 +70,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                     html.Div(
                                         [
                                             html.Div(
-                                                "Time-Resolved Partial Discharge Analyzer",
+                                                "PD Classification Tool",
                                                 style={
                                                     "textAlign": "right",
                                                     "color": "white",
@@ -90,8 +91,8 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                         ],
                                         style={
                                             "position": "absolute",
-                                            "right": "20px",
-                                            "bottom": "50px",
+                                            "right": "20px",  # Cambiado de left a right
+                                            "bottom": "10px",
                                         },
                                     ),
                                 ],
@@ -124,7 +125,8 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                             html.Div(
                                                 dbc.Row(
                                                     dcc.Markdown(
-                                                        "**Folder Selected: **" + folder
+                                                        "**Folder Selected:**\n"
+                                                        + folder
                                                     )
                                                 ),
                                                 style={
@@ -619,16 +621,120 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                             ),
                                         ],
                                     ),
+                                    dcc.Tab(
+                                        label="Voltage-Dependent Metrics",
+                                        children=[
+                                            html.Div(
+                                                [
+                                                    html.Div(
+                                                        dcc.Slider(
+                                                            id="voltage-slider-1",
+                                                            min=0,
+                                                            max=1,
+                                                            step=0.01,
+                                                            value=0.4,
+                                                            marks={i: f"{i:.2f}" for i in [0, 0.5, 1, 1.5, 2]},
+                                                            tooltip={"placement": "bottom", "always_visible": False},
+                                                            updatemode="mouseup",  # Solo ejecuta el callback al soltar el slider
+                                                            included=True,
+                                                        ),
+                                                        style={"marginBottom": "20px"},
+                                                    ),
+                                                    dbc.Button(
+                                                        "Refresh",
+                                                        id="refresh-button-multi-voltage",
+                                                    ),
+                                                    dcc.Graph(
+                                                        id="voltage-dep-1",
+                                                        figure={
+                                                            "data": [],
+                                                            "layout": [],
+                                                        },
+                                                        config={
+                                                            "displayModeBar": True,
+                                                            "toImageButtonOptions": {
+                                                                "format": "png",
+                                                                "filename": "voltage-dep-1",
+                                                                "height": 600,
+                                                                "width": 1000,
+                                                                "scale": 1,
+                                                            },
+                                                        },
+                                                    ),
+
+                                                ],
+                                                style={
+                                                    "marginBottom": "20px",
+                                                    "borderRadius": "8px",
+                                                    "padding": "15px",
+                                                    "backgroundColor": "#fefefe",
+                                                    "border": "1px solid #ccc",
+                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                    "width": "70%",
+                                                    "boxSizing": "border-box",
+                                                    "marginLeft": "auto",
+                                                    "marginRight": "auto",
+                                                },
+                                            ),
+                                            html.Div(
+                                                [                                                    html.Div(
+                                                        dcc.Slider(
+                                                            id="voltage-slider-2",
+                                                            min=0,
+                                                            max=1,
+                                                            step=0.001,
+                                                            value=0.005,
+                                                            marks={i: f"{i:.2f}" for i in [0, 0.5, 1, 1.5, 2]},
+                                                            tooltip={"placement": "bottom", "always_visible": False},
+                                                            updatemode="mouseup",  # Solo ejecuta el callback al soltar el slider
+                                                            included=True,
+                                                        ),
+                                                        style={"marginBottom": "20px"},
+                                                    ),
+                                                    dcc.Graph(
+                                                        id="voltage-dep-2",
+                                                        figure={
+                                                            "data": [],
+                                                            "layout": [],
+                                                        },
+                                                        config={
+                                                            "displayModeBar": True,
+                                                            "toImageButtonOptions": {
+                                                                "format": "png",
+                                                                "filename": "voltage-dep-2",
+                                                                "height": 600,
+                                                                "width": 1000,
+                                                                "scale": 1,
+                                                            },
+                                                        },
+                                                    ),
+                                                ],
+                                                style={
+                                                    "marginBottom": "20px",
+                                                    "borderRadius": "8px",
+                                                    "padding": "15px",
+                                                    "backgroundColor": "#fefefe",
+                                                    "border": "1px solid #ccc",
+                                                    "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                    "width": "70%",
+                                                    "boxSizing": "border-box",
+                                                    "marginLeft": "auto",
+                                                    "marginRight": "auto",
+                                                },
+                                            ),
+                                        ],
+                                    ),
                                     dcc.Tab(  # Métricas y Gráficos Extra
-                                        label="Plots & Metrics",
+                                        label="Time-Dependent Metrics",
                                         children=[
                                             html.Div(
                                                 [
                                                     html.Div(
                                                         [
-                                                            html.Button(
+
+                                                            dbc.Button(
                                                                 "Refresh",
-                                                                id="refresh-button",
+                                                                id="refresh-button-single-voltage",
                                                             ),
                                                             dcc.Dropdown(
                                                                 id="division-dropdown",
@@ -679,6 +785,39 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                                         [
                                                             dcc.Graph(
                                                                 id="extra-plot-2",
+                                                                figure={
+                                                                    "data": [],
+                                                                    "layout": [],
+                                                                },
+                                                                config={
+                                                                    "displayModeBar": True,
+                                                                    "toImageButtonOptions": {
+                                                                        "format": "png",
+                                                                        "filename": "extra_plot_2",
+                                                                        "height": 600,
+                                                                        "width": 1000,
+                                                                        "scale": 1,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        ],
+                                                        style={
+                                                            "marginBottom": "20px",
+                                                            "borderRadius": "8px",
+                                                            "padding": "15px",
+                                                            "backgroundColor": "#fefefe",
+                                                            "border": "1px solid #ccc",
+                                                            "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.05)",
+                                                            "width": "70%",
+                                                            "boxSizing": "border-box",
+                                                            "marginLeft": "auto",
+                                                            "marginRight": "auto",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            dcc.Graph(
+                                                                id="extra-plot-3",
                                                                 figure={
                                                                     "data": [],
                                                                     "layout": [],

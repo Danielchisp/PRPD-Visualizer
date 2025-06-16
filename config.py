@@ -1,16 +1,7 @@
 # Los primeros 10 colores por defecto de Plotly:
-MODERN_PLOTLY_COLORS = [
-    "#636EFA",  # Azul claro intenso (el que ves en scatter)
-    "#EF553B",  # Rojo anaranjado
-    "#00CC96",  # Verde esmeralda
-    "#AB63FA",  # Morado claro
-    "#FFA15A",  # Naranja pastel
-    "#19D3F3",  # Cyan brillante
-    "#FF6692",  # Rosa
-    "#B6E880",  # Verde lima
-    "#FF97FF",  # Rosa neón
-    "#FECB52",  # Amarillo dorado
-]
+import matplotlib.pyplot as plt
+
+MODERN_PLOTLY_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][:10]
 
 availablePorts = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010]
 
@@ -22,6 +13,16 @@ CHANNEL_DICT = {
     "Antenna": "CH4",
 }
 
+# Configuración de colores para los canales
+CHANNEL_COLORS = {
+    "CH2": "blue",   # MODERN_PLOTLY_COLORS[0],  # Azul (#1f77b4)
+    "CH3": "green",  # MODERN_PLOTLY_COLORS[1],  # Naranjo (#ff7f0e)
+    "CH4": "red",    # MODERN_PLOTLY_COLORS[2]   # Verde (#2ca02c)
+}
+
+# Límites FFT
+FFT_LIMITS = {"CH2": 250e6, "CH3": 250e6, "CH4": 2000e6}
+
 # Configuración de triggers
 TRIGGER_SETTINGS = {
     "mainHFCT": {"main": 0.02, "reverse": 100},
@@ -29,15 +30,10 @@ TRIGGER_SETTINGS = {
     "antenna": {"main": 0.01, "reverse": 100},
 }
 
+# Configuración de ventanas
 window_antenna = 500
 window_HFCT = 5000
 
-samplesToMicros = 5000
-impulseDownsample = 10000
-
-tkinterAppDim = "750x420"
-
-# Configuración de ventanas
 WINDOW_SETTINGS = {
     "window_antenna": window_antenna,
     "window_HFCT": window_HFCT,
@@ -52,15 +48,9 @@ WINDOW_SETTINGS = {
     "fs": 5e9,
 }
 
-# Configuración de colores para los canales
-CHANNEL_COLORS = {
-    "CH2": "blue",  # MODERN_PLOTLY_COLORS[0],  # Azul (#1f77b4)
-    "CH3": "green",  # MODERN_PLOTLY_COLORS[1],  # Naranjo (#ff7f0e)
-    "CH4": "red",  # MODERN_PLOTLY_COLORS[2]   # Verde (#2ca02c)
-}
-
-# Límites FFT
-FFT_LIMITS = {"CH2": 250e6, "CH3": 250e6, "CH4": 2000e6}
+samplesToMicros = 5000 # Previouly Known
+impulseDownsample = 100000 
+tkinterAppDim = "750x420"
 
 host = "127.0.0.1"  # Host address for the app
-port = 8000  # Port for the app
+port = 8000         # Port for the app

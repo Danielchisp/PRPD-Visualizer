@@ -23,20 +23,33 @@ def plot_time_fft_single(selected_data):
     freqs = selected_data["freqs"]
     fft_values = selected_data["fft_values"] / max(abs(selected_data["fft_values"]))
     timeSignal = selected_data["signal"] / max(abs(selected_data["signal"]))
+    t = selected_data["t"]
+
+    # Línea vertical roja en el 20% del tiempo total
+    t_20 = t[0] + 0.2 * (t[-1] - t[0])
+    vline = go.Scatter(
+        x=[t_20, t_20],
+        y=[min(timeSignal), max(timeSignal)],
+        mode="lines",
+        line=dict(color="red", width=1),
+        name="20% Time",
+        showlegend=False,
+    )
 
     time_fig = {
         "data": [
             go.Scatter(
-                x=selected_data["t"],
+                x=t,
                 y=timeSignal,
                 mode="lines",
                 line=dict(color="blue"),
-            )
+            ),
+            vline,
         ],
         "layout": go.Layout(
             title=dict(
-                text="Time Resolved PD",  # Título del gráfico
-                font=dict(size=16),  # Tamaño de la fuente
+                text="Time Resolved PD",
+                font=dict(size=16),
             ),
             xaxis=dict(title="Time (us)"),
             yaxis=dict(title="(a.u)"),
@@ -49,8 +62,8 @@ def plot_time_fft_single(selected_data):
         ],
         "layout": go.Layout(
             title=dict(
-                text=f"Frequency Resolved PD",  # Título del gráfico
-                font=dict(size=16),  # Tamaño de la fuente
+                text=f"Frequency Resolved PD",
+                font=dict(size=16),
             ),
             xaxis=dict(title="Frequency", range=[0, selected_data["fft_lim"]]),
             yaxis=dict(title="(a.u)"),
@@ -61,6 +74,100 @@ def plot_time_fft_single(selected_data):
 
 
 def plot_time_fft_multiple(selected_data_list):
+    """
+    selected_data_list: list of dicts, each dict with keys: 't', 'signal', 'freqs', 'fft_values', 'fft_lim'
+    All signals will be interpolated to a common time vector based on their original length and the sampling frequency.
+    """
+    time_traces = []
+    fft_traces = []
+
+    # Limitar a un máximo de 50 señales
+    max_signals = 30
+    if len(selected_data_list) > max_signals:
+        rng = np.random.default_rng()
+        indices = rng.choice(len(selected_data_list), size=max_signals, replace=False)
+        data_list = [selected_data_list[i] for i in indices]
+    else:
+        data_list = selected_data_list
+    data_list = selected_data_list[:max_signals]
+
+    # Obtener la frecuencia de muestreo
+    fs = WINDOW_SETTINGS["fs"]
+
+    # Determinar el largo máximo de las señales
+    max_len = max(len(data["signal"]) for data in data_list)
+    # Crear un vector de tiempo común en us
+    t_common = np.arange(max_len) / fs * 1e6
+
+    for idx, data in enumerate(data_list):
+        signal = data["signal"]
+        # Vector de tiempo original en us
+        t_orig = np.arange(len(signal)) / fs * 1e6
+        # Interpolar la señal al vector de tiempo común
+        timeSignal = signal / max(abs(signal))
+        timeSignal_interp = np.interp(t_common, t_orig, timeSignal)
+        fft_values = data["fft_values"] / max(abs(data["fft_values"]))
+        time_traces.append(
+            go.Scatter(
+                x=t_common,
+                y=timeSignal_interp,
+                mode="lines",
+                line=dict(color="blue", width=1),
+                name=f"Signal {idx+1}",
+                showlegend=False,
+            )
+        )
+        fft_traces.append(
+            go.Scatter(
+                x=data["freqs"],
+                y=fft_values,
+                mode="lines",
+                line=dict(color="red", width=1),
+                name=f"FFT {idx+1}",
+                showlegend=False,
+            )
+        )
+
+    # Línea vertical roja en el 20% del tiempo total
+    t_20 = t_common[0] + 0.2 * (t_common[-1] - t_common[0])
+    vline = go.Scatter(
+        x=[t_20, t_20],
+        y=[-1, 1],
+        mode="lines",
+        line=dict(color="red", width=1),
+        name="20% Time",
+        showlegend=False,
+    )
+    time_traces.append(vline)
+
+    # Use the fft_lim of the first element (assume all have same range)
+    fft_lim = data_list[0]["fft_lim"] if data_list else None
+
+    time_fig = {
+        "data": time_traces,
+        "layout": go.Layout(
+            title=dict(
+                text="Time Resolved PD (Multiple)",
+                font=dict(size=16),
+            ),
+            xaxis=dict(title="Time (us)"),
+            yaxis=dict(title="(a.u)"),
+        ),
+    }
+
+    fft_fig = {
+        "data": fft_traces,
+        "layout": go.Layout(
+            title=dict(
+                text="Frequency Resolved PD (Multiple)",
+                font=dict(size=16),
+            ),
+            xaxis=dict(title="Frequency", range=[0, fft_lim]),
+            yaxis=dict(title="(a.u)"),
+        ),
+    }
+
+    return time_fig, fft_fig
     """
     selected_data_list: list of dicts, each dict with keys: 't', 'signal', 'freqs', 'fft_values', 'fft_lim'
     All signals will be interpolated to a common time vector based on their original length and the sampling frequency.
@@ -153,6 +260,7 @@ def plot_class_map(selected_data, xValue, yValue):
         "Qapp": "Apparent Charge (C)",
         "T2": "Equivalent Time (s)",
         "W2": "Equivalent Frequency (Hz)",
+        "x": "Time of Occurrence (us)"
     }
 
     # Obtener las FFTs y sus tamaños
