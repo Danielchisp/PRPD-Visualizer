@@ -1,0 +1,31 @@
+Iniciando callback. Carpeta padre: E:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente
+Subfolders encontradas: ['T1', 'T2', 'T3', 'T4']
+Datos de cache cargados correctamente de E:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\impulse_data_cache_2.pkl
+
+Procesando subfolder: T1
+
+Buscando archivos para Reverse HFCT:
+  Ruta HFCT: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T1\Reverse HFCT.csv
+  Ruta metadata: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T1\TRPD_metadata.pkl
+Uno o ambos archivos (HFCT.csv o metadata) no existen
+
+Procesando subfolder: T2
+
+Buscando archivos para Reverse HFCT:
+  Ruta HFCT: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T2\Reverse HFCT.csv
+  Ruta metadata: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T2\TRPD_metadata.pkl
+Uno o ambos archivos (HFCT.csv o metadata) no existen
+
+Procesando subfolder: T3
+
+Buscando archivos para Reverse HFCT:
+  Ruta HFCT: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T3\Reverse HFCT.csv
+  Ruta metadata: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T3\TRPD_metadata.pkl
+Uno o ambos archivos (HFCT.csv o metadata) no existen
+
+Procesando subfolder: T4
+
+Buscando archivos para Reverse HFCT:
+  Ruta HFCT: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T4\Reverse HFCT.csv
+  Ruta metadata: D:/Mediciones Impulso Reversas/Nuevas/Metacrilato Superficiales - Volteado correctamente\T4\TRPD_metadata.pkl
+Uno o ambos archivos (HFCT.csv o metadata) no existen

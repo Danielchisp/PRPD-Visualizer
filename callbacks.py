@@ -154,8 +154,16 @@ def register_callbacks(app, df, time, impulse, folder):
         y_max = np.max(np.abs(y)) if y.size > 0 else 0
         y_norm = y / y_max if y.size > 0 and y_max != 0 else y
         time_dps = "x" if "x" in filtered_df.columns else None
-        x = np.array(filtered_df[time_dps].values) if time_dps else np.arange(len(filtered_df))
-        bins = np.linspace(np.min(x), np.max(x), num_bins + 1) if x.size > 0 else np.linspace(0, 1, num_bins + 1)
+        x = (
+            np.array(filtered_df[time_dps].values)
+            if time_dps
+            else np.arange(len(filtered_df))
+        )
+        bins = (
+            np.linspace(np.min(x), np.max(x), num_bins + 1)
+            if x.size > 0
+            else np.linspace(0, 1, num_bins + 1)
+        )
         bin_centers, vpp_means, energy_means, num_signals = [], [], [], []
         for i in range(num_bins):
             bin_mask = (x >= bins[i]) & (x < bins[i + 1])
@@ -178,24 +186,60 @@ def register_callbacks(app, df, time, impulse, folder):
         num_signals_max = np.max(num_signals) if np.any(num_signals) else 0
         vpp_norm = vpp_means / vpp_max if vpp_max else vpp_means
         energy_norm = energy_means / energy_max if energy_max else energy_means
-        num_signals_norm = num_signals / num_signals_max if num_signals_max else num_signals
+        num_signals_norm = (
+            num_signals / num_signals_max if num_signals_max else num_signals
+        )
         fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x=bin_centers, y=vpp_norm, mode="lines+markers",
-                                  marker=dict(color=MODERN_PLOTLY_COLORS[0], size=8),
-                                  line=dict(color=MODERN_PLOTLY_COLORS[0], width=2),
-                                  name=f"Mean Vpp (mV) (max={vpp_max:.2f})" if vpp_max else "Mean Vpp (mV)"))
-        fig1.add_trace(go.Scatter(x=bin_centers, y=energy_norm, mode="lines+markers",
-                                  marker=dict(color=MODERN_PLOTLY_COLORS[1], size=8),
-                                  line=dict(color=MODERN_PLOTLY_COLORS[1], width=2),
-                                  name=f"Mean Energy (mV²) (max={energy_max:.2f})" if energy_max else "Mean Energy (mV²)"))
-        fig1.add_trace(go.Scatter(x=bin_centers, y=num_signals_norm, mode="lines+markers",
-                                  marker=dict(color="black", size=8),
-                                  line=dict(color="black", width=2),
-                                  name=f"Num. of Discharges (max={num_signals_max})" if num_signals_max else "Num. of Discharges"))
-        fig1.add_trace(go.Scatter(x=x, y=y_norm, mode="markers",
-                                  marker=dict(color=CHANNEL_COLORS["CH3"], size=4),
-                                  line=dict(color=CHANNEL_COLORS["CH3"], width=2),
-                                  name=f"Signal Data (max={y_max:.2f})" if y_max else "Signal Data"))
+        fig1.add_trace(
+            go.Scatter(
+                x=bin_centers,
+                y=vpp_norm,
+                mode="lines+markers",
+                marker=dict(color=MODERN_PLOTLY_COLORS[0], size=8),
+                line=dict(color=MODERN_PLOTLY_COLORS[0], width=2),
+                name=(
+                    f"Mean Vpp (mV) (max={vpp_max:.2f})" if vpp_max else "Mean Vpp (mV)"
+                ),
+            )
+        )
+        fig1.add_trace(
+            go.Scatter(
+                x=bin_centers,
+                y=energy_norm,
+                mode="lines+markers",
+                marker=dict(color=MODERN_PLOTLY_COLORS[1], size=8),
+                line=dict(color=MODERN_PLOTLY_COLORS[1], width=2),
+                name=(
+                    f"Mean Energy (mV²) (max={energy_max:.2f})"
+                    if energy_max
+                    else "Mean Energy (mV²)"
+                ),
+            )
+        )
+        fig1.add_trace(
+            go.Scatter(
+                x=bin_centers,
+                y=num_signals_norm,
+                mode="lines+markers",
+                marker=dict(color="black", size=8),
+                line=dict(color="black", width=2),
+                name=(
+                    f"Num. of Discharges (max={num_signals_max})"
+                    if num_signals_max
+                    else "Num. of Discharges"
+                ),
+            )
+        )
+        fig1.add_trace(
+            go.Scatter(
+                x=x,
+                y=y_norm,
+                mode="markers",
+                marker=dict(color=CHANNEL_COLORS["CH3"], size=4),
+                line=dict(color=CHANNEL_COLORS["CH3"], width=2),
+                name=f"Signal Data (max={y_max:.2f})" if y_max else "Signal Data",
+            )
+        )
         fig1.update_layout(
             yaxis=dict(title="Normalized Metrics"),
             title="",
@@ -209,14 +253,23 @@ def register_callbacks(app, df, time, impulse, folder):
         try:
             reverse_hfct_df = pd.read_csv(folder + "\\" + "Reverse HFCT.csv")
             main_hfct_df = pd.read_csv(folder + "\\" + "Main HFCT.csv")
-            reverse_ids = reverse_hfct_df["id"].tolist() if "id" in reverse_hfct_df.columns else []
-            main_ids = main_hfct_df["id"].tolist() if "id" in main_hfct_df.columns else []
-            reverse_filtered = df[df["id"].isin(reverse_ids)] if reverse_ids else pd.DataFrame()
+            reverse_ids = (
+                reverse_hfct_df["id"].tolist()
+                if "id" in reverse_hfct_df.columns
+                else []
+            )
+            main_ids = (
+                main_hfct_df["id"].tolist() if "id" in main_hfct_df.columns else []
+            )
+            reverse_filtered = (
+                df[df["id"].isin(reverse_ids)] if reverse_ids else pd.DataFrame()
+            )
             main_filtered = df[df["id"].isin(main_ids)] if main_ids else pd.DataFrame()
         except Exception as e:
             print(f"Error reading HFCT files: {e}")
             reverse_filtered = pd.DataFrame()
             main_filtered = pd.DataFrame()
+
         def get_fft_mean(filtered):
             fft_list = []
             for _, row in filtered.iterrows():
@@ -232,6 +285,7 @@ def register_callbacks(app, df, time, impulse, folder):
                 return fft_mean
             else:
                 return None
+
         reverse_fft_mean = get_fft_mean(reverse_filtered)
         main_fft_mean = get_fft_mean(main_filtered)
         freq = None
@@ -246,21 +300,25 @@ def register_callbacks(app, df, time, impulse, folder):
                 freq = None
         fig2 = go.Figure()
         if reverse_fft_mean is not None:
-            fig2.add_trace(go.Scatter(
-                x=freq if freq is not None else np.arange(len(reverse_fft_mean)),
-                y=reverse_fft_mean,
-                mode="lines",
-                line=dict(color=MODERN_PLOTLY_COLORS[0], width=3),
-                name="Reverse HFCT (mean, normalized)",
-            ))
+            fig2.add_trace(
+                go.Scatter(
+                    x=freq if freq is not None else np.arange(len(reverse_fft_mean)),
+                    y=reverse_fft_mean,
+                    mode="lines",
+                    line=dict(color=MODERN_PLOTLY_COLORS[0], width=3),
+                    name="Reverse HFCT (mean, normalized)",
+                )
+            )
         if main_fft_mean is not None:
-            fig2.add_trace(go.Scatter(
-                x=freq if freq is not None else np.arange(len(main_fft_mean)),
-                y=main_fft_mean,
-                mode="lines",
-                line=dict(color=MODERN_PLOTLY_COLORS[1], width=3),
-                name="Main HFCT (mean, normalized)",
-            ))
+            fig2.add_trace(
+                go.Scatter(
+                    x=freq if freq is not None else np.arange(len(main_fft_mean)),
+                    y=main_fft_mean,
+                    mode="lines",
+                    line=dict(color=MODERN_PLOTLY_COLORS[1], width=3),
+                    name="Main HFCT (mean, normalized)",
+                )
+            )
         fig2.update_layout(
             title="FFT Mean Comparison (Reverse/Main HFCT, Normalized)",
             xaxis_title="Frequency (MHz)" if freq is not None else "Frequency (MHz)",
@@ -286,6 +344,7 @@ def register_callbacks(app, df, time, impulse, folder):
             )
             grouped["Vpp_mean"] = grouped["Vpp_mean"] * 1e3  # mV
             return grouped
+
         def get_impulse_mean_time(filtered):
             if (
                 filtered.empty
@@ -297,40 +356,47 @@ def register_callbacks(app, df, time, impulse, folder):
                 filtered.groupby("impulseNum").agg(min_time=("x", "min")).reset_index()
             )
             return grouped
+
         df_rev = get_impulse_vpp(reverse_filtered)
         df_main = get_impulse_vpp(main_filtered)
         df_rev_time = get_impulse_mean_time(reverse_filtered)
         fig3 = go.Figure()
         if not df_main.empty:
-            fig3.add_trace(go.Scatter(
-                x=df_main["impulseNum"],
-                y=df_main["Vpp_mean"]/max(df_main["Vpp_mean"]),
-                mode="lines+markers",
-                marker=dict(color=MODERN_PLOTLY_COLORS[0], size=8),
-                line=dict(color=MODERN_PLOTLY_COLORS[0], width=2),
-                name="Main HFCT Vpp Mean",
-                yaxis="y1",
-            ))
+            fig3.add_trace(
+                go.Scatter(
+                    x=df_main["impulseNum"],
+                    y=df_main["Vpp_mean"] / max(df_main["Vpp_mean"]),
+                    mode="lines+markers",
+                    marker=dict(color=MODERN_PLOTLY_COLORS[0], size=8),
+                    line=dict(color=MODERN_PLOTLY_COLORS[0], width=2),
+                    name="Main HFCT Vpp Mean",
+                    yaxis="y1",
+                )
+            )
         if not df_rev.empty:
-            fig3.add_trace(go.Scatter(
-                x=df_rev["impulseNum"],
-                y=df_rev["Vpp_mean"]/max(df_rev["Vpp_mean"]),
-                mode="lines+markers",
-                marker=dict(color=MODERN_PLOTLY_COLORS[1], size=8),
-                line=dict(color=MODERN_PLOTLY_COLORS[1], width=2),
-                name="Reverse HFCT Vpp Mean",
-                yaxis="y1",
-            ))
+            fig3.add_trace(
+                go.Scatter(
+                    x=df_rev["impulseNum"],
+                    y=df_rev["Vpp_mean"] / max(df_rev["Vpp_mean"]),
+                    mode="lines+markers",
+                    marker=dict(color=MODERN_PLOTLY_COLORS[1], size=8),
+                    line=dict(color=MODERN_PLOTLY_COLORS[1], width=2),
+                    name="Reverse HFCT Vpp Mean",
+                    yaxis="y1",
+                )
+            )
         if not df_rev_time.empty:
-            fig3.add_trace(go.Scatter(
-                x=df_rev_time["impulseNum"],
-                y=df_rev_time["min_time"],
-                mode="lines+markers",
-                marker=dict(color="black", size=8, symbol="diamond"),
-                line=dict(color="black", width=2),
-                name="Reverse HFCT Min Time (us)",
-                yaxis="y2",
-            ))
+            fig3.add_trace(
+                go.Scatter(
+                    x=df_rev_time["impulseNum"],
+                    y=df_rev_time["min_time"],
+                    mode="lines+markers",
+                    marker=dict(color="black", size=8, symbol="diamond"),
+                    line=dict(color="black", width=2),
+                    name="Reverse HFCT Min Time (us)",
+                    yaxis="y2",
+                )
+            )
         fig3.update_layout(
             title="Vpp Mean by Impulse Number (Main & Reverse HFCT) and Min Reverse Time",
             xaxis_title="Impulse Number",
@@ -348,11 +414,7 @@ def register_callbacks(app, df, time, impulse, folder):
             template="simple_white",
             height=400,
             margin=dict(l=40, r=20, t=50, b=40),
-            legend=dict(
-                x=0.01,
-                y=0.99,
-                title=""
-            ),
+            legend=dict(x=0.01, y=0.99, title=""),
         )
         return [fig1, fig2, fig3]
 
@@ -700,7 +762,11 @@ def register_callbacks(app, df, time, impulse, folder):
     def update_voltage_dependent_graph_1(n_clicks, gain1):
         parent_folder = os.path.dirname(folder)
         cache_file = os.path.join(parent_folder, "impulse_data_cache_1.pkl")
-        subfolders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
+        subfolders = [
+            f
+            for f in os.listdir(parent_folder)
+            if os.path.isdir(os.path.join(parent_folder, f))
+        ]
         fig1 = go.Figure()
 
         # Intentar cargar datos cacheados
@@ -724,12 +790,14 @@ def register_callbacks(app, df, time, impulse, folder):
                         impulse_ave = np.load(impulse_ave_path)
                         metrics = impulse_metrics(impulse_ave)
                         t0_linear = metrics.get("t0_linear", 0)
-                        impulse_data.append({
-                            "sub": sub,
-                            "impulse_ave": impulse_ave,
-                            "t0_linear": t0_linear,
-                            "path": sub_path
-                        })
+                        impulse_data.append(
+                            {
+                                "sub": sub,
+                                "impulse_ave": impulse_ave,
+                                "t0_linear": t0_linear,
+                                "path": sub_path,
+                            }
+                        )
                     except Exception as e:
                         print(f"Error loading {impulse_ave_path}: {e}")
             # Guardar cache
@@ -745,41 +813,99 @@ def register_callbacks(app, df, time, impulse, folder):
 
         max_t0 = max(d["t0_linear"] for d in impulse_data)
 
+        # --- Guardar delays en cada subcarpeta ---
         for i, data in enumerate(impulse_data):
             sub = data["sub"]
             impulse_ave = data["impulse_ave"]
             t0_linear = data["t0_linear"]
-            sub_path = data["path"]
+            # Fuerza la ruta a la unidad E: si no está ya en E:
+            sub_path = os.path.abspath(data["path"])
+            if not sub_path.lower().startswith("e:"):
+                # Cambia la letra de unidad a E: manteniendo el resto del path
+                drive, rest = os.path.splitdrive(sub_path)
+                sub_path = os.path.join("E:", rest)
+                sub_path = os.path.normpath(sub_path)
             color = MODERN_PLOTLY_COLORS[i % len(MODERN_PLOTLY_COLORS)]
 
             delay_samples = int(round(max_t0 - t0_linear))
             sample_us = 200.0 / len(impulse_ave)
             delay_us = delay_samples * sample_us
 
+            # Asegura que el directorio existe antes de guardar delays.csv
+            try:
+                os.makedirs(sub_path, exist_ok=True)
+                delays_csv_path = os.path.normpath(os.path.join(sub_path, "delays.csv"))
+                if os.path.exists(delays_csv_path):
+                    delays_df = pd.read_csv(delays_csv_path)
+                    mask = delays_df["sub"] == sub
+                    if mask.any():
+                        delays_df.loc[
+                            mask, ["delay_samples", "delay_us", "t0_linear"]
+                        ] = [delay_samples, delay_us, t0_linear]
+                    else:
+                        delays_df = pd.concat(
+                            [
+                                delays_df,
+                                pd.DataFrame(
+                                    [
+                                        {
+                                            "sub": sub,
+                                            "delay_samples": delay_samples,
+                                            "delay_us": delay_us,
+                                            "t0_linear": t0_linear,
+                                        }
+                                    ]
+                                ),
+                            ],
+                            ignore_index=True,
+                        )
+                else:
+                    delays_df = pd.DataFrame(
+                        [
+                            {
+                                "sub": sub,
+                                "delay_samples": delay_samples,
+                                "delay_us": delay_us,
+                                "t0_linear": t0_linear,
+                            }
+                        ]
+                    )
+                delays_df.to_csv(delays_csv_path, index=False)
+            except Exception as e:
+                print(f"Error saving delays.csv in {sub_path}: {e}")
+
+            # Graficar impulse_ave en fig1
             x_full = np.arange(0, 200, 0.002)
             n_full = len(x_full)
             y_aligned = np.full(n_full, np.nan)
             start_idx = delay_samples
             end_idx = min(start_idx + len(impulse_ave), n_full)
             if start_idx < n_full:
-                y_aligned[start_idx:end_idx] = impulse_ave[:end_idx - start_idx]
+                y_aligned[start_idx:end_idx] = impulse_ave[: end_idx - start_idx]
             x_resampled = np.arange(0, 200, 0.1)
             y_resampled = np.interp(x_resampled, x_full, y_aligned * gain1)
 
-            fig1.add_trace(go.Scattergl(
-                x=x_resampled,
-                y=y_resampled,
-                mode="lines",
-                line=dict(color=color, width=2),
-                name=f"{sub} impulse_ave"
-            ))
+            fig1.add_trace(
+                go.Scattergl(
+                    x=x_resampled,
+                    y=y_resampled,
+                    mode="lines",
+                    line=dict(color=color, width=2),
+                    name=f"{sub} impulse_ave",
+                )
+            )
 
             # Graficar Main HFCT en fig1
-            main_hfct_path = os.path.join(sub_path, "Main HFCT.csv")
-            trpd_metadata_path = os.path.join(sub_path, "TRPD_metadata.pkl")
+            main_hfct_path = os.path.normpath(
+                os.path.join(parent_folder, subfolders[i], "Main HFCT.csv")
+            )
+            trpd_metadata_path = os.path.normpath(
+                os.path.join(parent_folder, subfolders[i], "TRPD_metadata.pkl")
+            )
             if os.path.exists(main_hfct_path) and os.path.exists(trpd_metadata_path):
                 try:
                     main_hfct_df = pd.read_csv(main_hfct_path)
+
                     if "id" in main_hfct_df.columns and not main_hfct_df.empty:
                         trpd_metadata_df = pd.read_pickle(trpd_metadata_path)
                         all_x = []
@@ -790,27 +916,37 @@ def register_callbacks(app, df, time, impulse, folder):
                                 x = row.iloc[0].get("x")
                                 y = row.iloc[0].get("y")
                                 if isinstance(x, str):
-                                    try: x = eval(x)
-                                    except: x = None
+                                    try:
+                                        x = eval(x)
+                                    except:
+                                        x = None
                                 if isinstance(y, str):
-                                    try: y = eval(y)
-                                    except: y = None
-                                if x is not None and not isinstance(x, (list, np.ndarray, pd.Series)):
+                                    try:
+                                        y = eval(y)
+                                    except:
+                                        y = None
+                                if x is not None and not isinstance(
+                                    x, (list, np.ndarray, pd.Series)
+                                ):
                                     x = [x]
-                                if y is not None and not isinstance(y, (list, np.ndarray, pd.Series)):
+                                if y is not None and not isinstance(
+                                    y, (list, np.ndarray, pd.Series)
+                                ):
                                     y = [y]
                                 if x is not None and y is not None and len(x) == len(y):
                                     x_corr = np.array(x, dtype=float) + delay_us
                                     all_x.extend(x_corr)
                                     all_y.extend(y)
                         if all_x and all_y and len(all_x) == len(all_y):
-                            fig1.add_trace(go.Scattergl(
-                                x=all_x,
-                                y=all_y,
-                                mode="markers",
-                                marker=dict(size=4, color=color),
-                                name=f"{sub} Main HFCT"
-                            ))
+                            fig1.add_trace(
+                                go.Scattergl(
+                                    x=all_x,
+                                    y=all_y,
+                                    mode="markers",
+                                    marker=dict(size=4, color=color),
+                                    name=f"{sub} Main HFCT",
+                                )
+                            )
                 except Exception as e:
                     print(f"Error loading Main HFCT for {sub}: {e}")
 
@@ -819,7 +955,7 @@ def register_callbacks(app, df, time, impulse, folder):
             xaxis_title="Time (us)",
             yaxis_title="Amplitude",
             template="simple_white",
-            xaxis=dict(range=[0, 30])
+            xaxis=dict(range=[0, 30]),
         )
         return fig1
 
@@ -834,7 +970,11 @@ def register_callbacks(app, df, time, impulse, folder):
     def update_voltage_dependent_graph_2(n_clicks, gain1, gain2):
         parent_folder = os.path.dirname(folder)
         cache_file = os.path.join(parent_folder, "impulse_data_cache_2.pkl")
-        subfolders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
+        subfolders = [
+            f
+            for f in os.listdir(parent_folder)
+            if os.path.isdir(os.path.join(parent_folder, f))
+        ]
         fig2 = go.Figure()
 
         # Intentar cargar datos cacheados
@@ -858,12 +998,14 @@ def register_callbacks(app, df, time, impulse, folder):
                         impulse_ave = np.load(impulse_ave_path)
                         metrics = impulse_metrics(impulse_ave)
                         t0_linear = metrics.get("t0_linear", 0)
-                        impulse_data.append({
-                            "sub": sub,
-                            "impulse_ave": impulse_ave,
-                            "t0_linear": t0_linear,
-                            "path": sub_path
-                        })
+                        impulse_data.append(
+                            {
+                                "sub": sub,
+                                "impulse_ave": impulse_ave,
+                                "t0_linear": t0_linear,
+                                "path": sub_path,
+                            }
+                        )
                     except Exception as e:
                         print(f"Error loading {impulse_ave_path}: {e}")
             # Guardar cache
@@ -890,28 +1032,35 @@ def register_callbacks(app, df, time, impulse, folder):
             sample_us = 200.0 / len(impulse_ave)
             delay_us = delay_samples * sample_us
 
+            # Graficar impulse_ave en fig2
             x_full = np.arange(0, 200, 0.002)
             n_full = len(x_full)
             y_aligned = np.full(n_full, np.nan)
             start_idx = delay_samples
             end_idx = min(start_idx + len(impulse_ave), n_full)
             if start_idx < n_full:
-                y_aligned[start_idx:end_idx] = impulse_ave[:end_idx - start_idx]
+                y_aligned[start_idx:end_idx] = impulse_ave[: end_idx - start_idx]
             x_resampled = np.arange(0, 200, 0.1)
             # Solo aquí se usa gain2 para impulse_ave
             y_resampled = np.interp(x_resampled, x_full, y_aligned * gain2)
 
-            fig2.add_trace(go.Scattergl(
-                x=x_resampled,
-                y=y_resampled,
-                mode="lines",
-                line=dict(color=color, width=2),
-                name=f"{sub} impulse_ave"
-            ))
+            fig2.add_trace(
+                go.Scattergl(
+                    x=x_resampled,
+                    y=y_resampled,
+                    mode="lines",
+                    line=dict(color=color, width=2),
+                    name=f"{sub} impulse_ave",
+                )
+            )
 
             # Graficar Reverse HFCT en fig2
-            reverse_hfct_path = os.path.join(sub_path, "Reverse HFCT.csv")
-            trpd_metadata_path = os.path.join(sub_path, "TRPD_metadata.pkl")
+            reverse_hfct_path = os.path.normpath(
+                os.path.join(parent_folder, subfolders[i], "Reverse HFCT.csv")
+            )
+            trpd_metadata_path = os.path.normpath(
+                os.path.join(parent_folder, subfolders[i], "TRPD_metadata.pkl")
+            )
             if os.path.exists(reverse_hfct_path) and os.path.exists(trpd_metadata_path):
                 try:
                     reverse_hfct_df = pd.read_csv(reverse_hfct_path)
@@ -925,28 +1074,38 @@ def register_callbacks(app, df, time, impulse, folder):
                                 x = row.iloc[0].get("x")
                                 y = row.iloc[0].get("y")
                                 if isinstance(x, str):
-                                    try: x = eval(x)
-                                    except: x = None
+                                    try:
+                                        x = eval(x)
+                                    except:
+                                        x = None
                                 if isinstance(y, str):
-                                    try: y = eval(y)
-                                    except: y = None
-                                if x is not None and not isinstance(x, (list, np.ndarray, pd.Series)):
+                                    try:
+                                        y = eval(y)
+                                    except:
+                                        y = None
+                                if x is not None and not isinstance(
+                                    x, (list, np.ndarray, pd.Series)
+                                ):
                                     x = [x]
-                                if y is not None and not isinstance(y, (list, np.ndarray, pd.Series)):
+                                if y is not None and not isinstance(
+                                    y, (list, np.ndarray, pd.Series)
+                                ):
                                     y = [y]
                                 if x is not None and y is not None and len(x) == len(y):
                                     x_corr = np.array(x, dtype=float) + delay_us
                                     all_x.extend(x_corr)
                                     all_y.extend(y)
                         if all_x and all_y and len(all_x) == len(all_y):
-                            fig2.add_trace(go.Scattergl(
-                                x=all_x,
-                                y=all_y,
-                                mode="markers",
-                                marker=dict(size=4, color=color),
-                                name=f"{sub} Reverse HFCT",
-                                opacity=0.7  # Transparencia
-                            ))
+                            fig2.add_trace(
+                                go.Scattergl(
+                                    x=all_x,
+                                    y=all_y,
+                                    mode="markers",
+                                    marker=dict(size=4, color=color),
+                                    name=f"{sub} Reverse HFCT",
+                                    opacity=0.7,  # Transparencia
+                                )
+                            )
                 except Exception as e:
                     print(f"Error loading Reverse HFCT for {sub}: {e}")
 
@@ -954,6 +1113,7 @@ def register_callbacks(app, df, time, impulse, folder):
             title="Impulse Average Final for All Subfolders<br>Aligned by t0_linear (delayed to max)",
             xaxis_title="Time (us)",
             yaxis_title="Amplitude",
-            template="simple_white"
+            template="simple_white",
         )
+        return fig2
         return fig2

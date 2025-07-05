@@ -1,7 +1,7 @@
 # Los primeros 10 colores por defecto de Plotly:
 import matplotlib.pyplot as plt
 
-MODERN_PLOTLY_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][:10]
+MODERN_PLOTLY_COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"][:10]
 
 availablePorts = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010]
 
@@ -15,9 +15,9 @@ CHANNEL_DICT = {
 
 # Configuración de colores para los canales
 CHANNEL_COLORS = {
-    "CH2": "blue",   # MODERN_PLOTLY_COLORS[0],  # Azul (#1f77b4)
+    "CH2": "blue",  # MODERN_PLOTLY_COLORS[0],  # Azul (#1f77b4)
     "CH3": "green",  # MODERN_PLOTLY_COLORS[1],  # Naranjo (#ff7f0e)
-    "CH4": "red",    # MODERN_PLOTLY_COLORS[2]   # Verde (#2ca02c)
+    "CH4": "red",  # MODERN_PLOTLY_COLORS[2]   # Verde (#2ca02c)
 }
 
 # Límites FFT
@@ -48,9 +48,9 @@ WINDOW_SETTINGS = {
     "fs": 5e9,
 }
 
-samplesToMicros = 5000 # Previouly Known
-impulseDownsample = 100000 
-tkinterAppDim = "750x420"
+samplesToMicros = 5000  # Previouly Known
+impulseDownsample = 100000
+tkinterAppDim = "750x450"
 
 host = "127.0.0.1"  # Host address for the app
-port = 8000         # Port for the app
+port = 8000  # Port for the app
