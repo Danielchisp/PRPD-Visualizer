@@ -44,12 +44,12 @@ def process_channel(channel_name, channel_cfg, impulsesNum, time_corrections):
 
                     start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_antenna_vis"])
                     end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_antenna_vis"])
-                    signalPicked = signal[start:end]
+                    signalPicked = np.array(signal[start:end])
 
                 else:
                     start = peak_idx - int(0.2 * WINDOW_SETTINGS["window_HFCT_vis"])
                     end = peak_idx + int(0.8 * WINDOW_SETTINGS["window_HFCT_vis"])
-                    signalPicked = signal[start:end]
+                    signalPicked = np.array(signal[start:end])
 
                 f, Pxx = welch(
                     signalPicked,

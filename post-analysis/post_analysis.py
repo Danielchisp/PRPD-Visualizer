@@ -2,6 +2,8 @@
 
 # from tkinter import Tk, filedialog, messagebox, simpledialog
 import os
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 # import dash
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,20 +50,21 @@ def best_fit_to_impulse_curve(pdx, pdy, impx, impy):
 
 # %% IMPORT FILES
 
-# Bushing cobre particulas | Nuevas Internas - copia | Metacrilato Superficiales - Volteado correctamente
+# Bushing cobre particulas | Nuevas Internas - copia | Metacrilato Superficiales - Volteado correctamente | Nuevas Internas 2 Vacuolas
 
 
 subfoldersName = ['Bushing cobre particulas', 'Nuevas Internas - copia',
-                  'Metacrilato Superficiales - Volteado correctamente']
+                  'Metacrilato Superficiales - Volteado correctamente', 'Nuevas Internas 2 Vacuolas']
 
 
-folder = r'E:\Mediciones Impulso Reversas\nuevas\\' + subfoldersName[1]
+
+folder = r'E:\Mediciones Impulso Reversas\nuevas\\' + subfoldersName[2]
 
 numImpulsesTest = 50
 
-subfolders = ['T1', 'T2', 'T3', 'T4', 'T5']
-# subfolders = ['T1', 'T2', 'T3', 'T4']
-
+# subfolders = ['T1', 'T2', 'T3', 'T4', 'T5']
+subfolders = ['T1', 'T2', 'T3', 'T4']
+# 
 tensiones = pd.read_csv(os.path.join(folder, 'Tensiones.txt'), header=None)
 
 impulses_per_voltage = []
@@ -162,7 +165,7 @@ for i in range(len(data_per_voltage)):
 
 # %% LAST IMPULSES
 
-metricSelected = list(mainReverseParams.keys())[4]
+metricSelected = list(mainReverseParams.keys())[2]
 
 fig, ax = plt.subplots(dpi = 300)
 
@@ -174,12 +177,12 @@ plt.xlabel('# Impulse')
 plt.ylabel(metricSelected)
 plt.legend()
 
-# %%        
+# %% MÉTRICAS POR IMPULSO       
 
 # Función para calcular métricas de cluster (WCSS, distancia promedio, diámetro)
 def calcular_metricas(puntos):
     if len(puntos) < 2:
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, np.array([0, 0])  # Retorna centroide [0,0] para casos vacíos
     
     centroide = np.mean(puntos, axis=0)
     
@@ -194,7 +197,7 @@ def calcular_metricas(puntos):
     # Diámetro (máxima distancia entre puntos del cluster)
     diametro = np.max(distancias)
     
-    return wcss, dist_promedio, diametro
+    return wcss, dist_promedio, diametro, centroide
 
 # Definición de claves (parámetros a comparar)
 claves = list(mainReverseParams.keys())
@@ -211,35 +214,46 @@ for j in claves:
             # Prepara los puntos del cluster actual
             puntos = np.column_stack((mainReverseParams[j][i], mainReverseParams[k][i]))
             
-            # Calcula métricas (usamos solo WCSS para la leyenda)
-            wcss, dist_prom, diametro = calcular_metricas(puntos)
+            # Calcula métricas y centroide
+            wcss, dist_prom, diametro, centroide = calcular_metricas(puntos)
             
-            # Scatter plot (sin centroides)
+            # Scatter plot de los puntos del cluster
             plt.scatter(
                 puntos[:, 0], puntos[:, 1], 
-                label=f'{tensiones[i][0]} kV | WCSS: {wcss:.1f}',  # Leyenda con WCSS
+                label=f'{tensiones[i][0]} kV',
                 s=8, 
                 color=palette[i], 
                 alpha=0.5
             )
+            
+            # Scatter plot del centroide (con marcador más grande y borde negro)
+            plt.scatter(
+                centroide[0], centroide[1],
+                s=50,                    # Tamaño grande
+                color='black',         # Mismo color que el cluster
+                edgecolor=palette[i],        # Borde negro
+                linewidth=2,              # Grosor del borde
+                marker='x'                # Forma de estrella
+            )
         
-        # Leyenda minimalista
+        # Leyenda mejorada
         plt.legend(
-            loc='best',          # Posición automática
-            frameon=False,       # Sin marco
-            fontsize=8,          # Tamaño compacto
-            title="Tensión | WCSS"
+            loc='best',
+            frameon=False,
+            fontsize=8,
+            title="Voltage"
         )
         
         # Etiquetas y título
         plt.xlabel(labelDict[j], fontsize=10)
         plt.ylabel(labelDict[k], fontsize=10)
-        plt.title(f"Comparación: {labelDict[j]} vs {labelDict[k]}", fontsize=12, pad=15)
+        plt.title(f"{labelDict[j]} vs {labelDict[k]}", fontsize=12, pad=15)
         plt.tight_layout()
         plt.show()
 # %% Descargas Principales HFCT
 
 gain = 1
+signalPicked = 0
 
 amplitude_pd_impulsenum_all = []
 amplitude_pd_all = []
@@ -260,7 +274,7 @@ temporalPlotExample = np.array(data_per_voltage[0][data_per_voltage[0]['id'].isi
     main_discharges_ids_per_voltage[0]['id'])]['signal'])
 timeExample = np.array(data_per_voltage[0][data_per_voltage[0]['id'].isin(
     main_discharges_ids_per_voltage[0]['id'])]['t'])
-plt.plot(timeExample[0], temporalPlotExample[0], color=palette[0])
+plt.plot(timeExample[signalPicked], temporalPlotExample[signalPicked], color=palette[0])
 plt.xlabel('Time ($\mu s$)')
 plt.ylabel('Voltage (V)')
 plt.show()
@@ -297,17 +311,18 @@ for j in range(len(impulses_per_voltage)):
     range_main.append(max(time_pd) - min(time_pd))
     num_discharges_main.append(len(time_pd))
     fft_all.append(np.mean(fft))
+    
+    print(f'Mínimo Time Lag = {round(min(time_pd),2)} us y Máximo Time Lag = {round(max(time_pd),2)} us')
 
     plt.plot(time_impulse, impulses_per_voltage[j] *
              amplitude_dependence_per_kv[-1], alpha=1, color=palette[j])
-    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{
-                str(tensiones[j][0])} kV', color=palette[j], alpha=1.0)
+    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{tensiones[j][0]} kV', color=palette[j], alpha=1.0)
 
 plt.scatter(time_pd_all, amplitude_pd_all, color='black', marker='x')
 plt.xlim(-1, 5)
 plt.xlabel('Time (us)')
 plt.ylabel('PD Peak to Peak Voltage (V)')
-plt.legend(loc='upper right')
+plt.legend(loc='lower right')
 plt.show()
 
 fig, ax = plt.subplots(dpi=300)
@@ -316,7 +331,6 @@ plt.plot(tensiones.iloc[0], amplitude_dependence_per_kv,
 plt.xlabel('Voltage (kV)')
 plt.ylabel('Calibration Factor')
 plt.show()
-
 
 fig, ax = plt.subplots(dpi=300)
 
@@ -366,6 +380,20 @@ plt.xlim(0, 100)
 plt.xlabel('Frequency (MHz)')
 plt.ylabel('($V^{2}$)')
 plt.legend()
+
+# Crear eje de zoom (puedes ajustar posición y tamaño)
+axins = ax.inset_axes([0.35, 0.2, 0.6, 0.3])
+
+for j in range(len(fft_all)):
+    axins.plot(fft_all[j], color=palette[j])
+
+# Ajustar estos límites según la región que quieras ampliar
+axins.set_xlim(20, 60)  # Ejemplo: zoom en frecuencia 20-30 MHz
+axins.set_ylim(0, 3e-4)   # Ejemplo: ajustar según tus datos
+
+# Opcional: añadir líneas de conexión o marcar la zona ampliada
+ax.indicate_inset_zoom(axins, edgecolor="black")
+
 plt.show()
 
 # %% Descargas Principales Antenna
@@ -427,8 +455,7 @@ for j in range(len(impulses_per_voltage)):
 
     plt.plot(time_impulse, impulses_per_voltage[j] *
              amplitude_dependence_per_kv[-1], alpha=1, color=palette[j])
-    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{
-                str(tensiones[j][0])} kV', color=palette[j], alpha=1.0)
+    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{str(tensiones[j][0])} kV', color=palette[j], alpha=1.0)
 
 plt.scatter(time_pd_all, amplitude_pd_all, color='black', marker='x')
 plt.xlim(-1, 20)
@@ -540,6 +567,9 @@ for j in range(len(impulses_per_voltage)):
     range_reverse.append(np.max(time_pd) - np.min(time_pd))
     mean_reverse.append(np.mean(amplitude_pd))
     num_reverse.append(len(amplitude_pd))
+    
+    print(f'Mínimo Time Lag = {round(min(time_pd),2)} us y Máximo Time Lag = {round(max(time_pd),2)} us')
+
 
     fft = data_per_voltage[j][data_per_voltage[j]['id'].isin(
         reverse_discharges_ids_per_voltage[j]['id'])]['fft_values']
@@ -547,8 +577,7 @@ for j in range(len(impulses_per_voltage)):
 
     plt.plot(time_impulses_per_voltage[j] + delays_per_voltage[j]['delay_us']
              [0], impulses_per_voltage[j]*gain, alpha=1, color=palette[j])
-    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{
-                str(tensiones[j][0])} kV', color=palette[j])
+    plt.scatter(time_pd, amplitude_pd, s=3, label=f'{tensiones[j][0]} kV - Npd/imp: {round(num_reverse[-1]/50,0)}', color=palette[j])
     # plt.xlim(50, 200)
 
 # plt.plot(reverse_time_pd_all, reverse_amplitude_pd_all, color = 'black', marker = 'x')
@@ -556,7 +585,7 @@ plt.xlabel('Time (us)')
 plt.ylabel('PD Voltage (V)')
 # plt.xlim(15,200)
 plt.ylim(-0.04, 0.015)
-plt.legend()
+plt.legend(fontsize=8, loc = 'lower left')
 
 fig, ax = plt.subplots(dpi=300)
 
@@ -600,15 +629,30 @@ plt.show()
 
 fig, ax = plt.subplots(dpi=300)
 
-for j in range(len(fft_all)):
-    plt.plot(fft_all_reverse[j], label=f'{
-             str(tensiones[j][0])} kV', color=palette[j])
+for j in range(len(fft_all_reverse)):
+    plt.plot(fft_all_reverse[j], label=f'{str(tensiones[j][0])} kV', color=palette[j])
 
 plt.xlim(0, 100)
 plt.xlabel('Frequency (MHz)')
 plt.ylabel('($V^{2}$)')
 plt.legend()
+
+# Crear eje de zoom (puedes ajustar posición y tamaño)
+axins = ax.inset_axes([0.25, 0.2, 0.7, 0.3])
+
+for j in range(len(fft_all_reverse)):
+    axins.plot(fft_all_reverse[j], color=palette[j])
+
+# Ajustar estos límites según la región que quieras ampliar
+axins.set_xlim(20, 60)  # Ejemplo: zoom en frecuencia 20-30 MHz
+axins.set_ylim(0, 0.03e-6)   # Ejemplo: ajustar según tus datos
+
+# Opcional: añadir líneas de conexión o marcar la zona ampliada
+ax.indicate_inset_zoom(axins, edgecolor="black")
+
 plt.show()
+
+# %% REVERSAS RES TEMPORAL
 
 max_time = 200
 
@@ -657,20 +701,50 @@ for i in range(len(subfolders)):
         vpp_mean_per_frame_per_kV.append(mean_pd_per_frame[0:frame_num])
         num_PD_per_frame_per_kV.append(num_pd_per_frame[0:frame_num])
 
+# Para el gráfico de Average PD
 fig, ax = plt.subplots(dpi=300)
 for i in vpp_mean_per_frame_per_kV:
-    plt.plot(time_step_groups, i, label=f'{str(tensiones[vpp_mean_per_frame_per_kV.index(
-        i)][0])} kV', color=palette[vpp_mean_per_frame_per_kV.index(i)])
+    color = palette[vpp_mean_per_frame_per_kV.index(i)]
+    label = f'{str(tensiones[vpp_mean_per_frame_per_kV.index(i)][0])} kV'
+    line, = plt.plot(time_step_groups, i, label=label, color=color)
+    
+    # Encontrar el máximo
+    max_val = max(i)
+    max_idx = np.argmax(i)
+    max_time = time_step_groups[max_idx]
+    
+    # # Añadir marcador en cruz
+    # plt.plot(max_time, max_val, 'x', color=color, markersize=10, markeredgewidth=2)
+    
+    # # Añadir texto con el valor
+    # plt.text(max_time, max_val, f' {max_val:.1f} mV', 
+    #          color=color, verticalalignment='bottom')
 
+plt.xlim(18,200)
 plt.xlabel('Time ($\mu s$)')
 plt.ylabel('Average PD (mV)')
 plt.legend()
 
+# Para el gráfico de N_PD
 fig, ax = plt.subplots(dpi=300)
 for i in num_PD_per_frame_per_kV:
-    plt.plot(time_step_groups, i, label=f'{str(tensiones[num_PD_per_frame_per_kV.index(
-        i)][0])} kV', color=palette[num_PD_per_frame_per_kV.index(i)])
+    color = palette[num_PD_per_frame_per_kV.index(i)]
+    label = f'{str(tensiones[num_PD_per_frame_per_kV.index(i)][0])} kV'
+    line, = plt.plot(time_step_groups, i, label=label, color=color)
+    
+    # Encontrar el máximo
+    max_val = max(i)
+    max_idx = np.argmax(i)
+    max_time = time_step_groups[max_idx]
+    
+    # # Añadir marcador en cruz
+    # plt.plot(max_time, max_val, 'x', color=color, markersize=10, markeredgewidth=2)
+    
+    # # Añadir texto con el valor
+    # plt.text(max_time, max_val, f' {max_val:.0f}', 
+    #          color=color, verticalalignment='bottom')
 
+plt.xlim(18,200)
 plt.xlabel('Time ($\mu s$)')
 plt.ylabel('$N_{PD}$')
 plt.legend()

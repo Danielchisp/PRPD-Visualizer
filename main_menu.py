@@ -44,12 +44,13 @@ time1, time2, time3, time4 = None, None, None, None
 ram_label, metadata_label = None, None
 port_selection = None
 
+
 def calculate_impulse_ave():
-    
+
     global status_label, impulse_ave_final, time1
-    
-    folder = get_folder()    
-    
+
+    folder = get_folder()
+
     status_label.config(
         text="Loading CH1 data... This may take a while...",
     )
@@ -63,20 +64,18 @@ def calculate_impulse_ave():
     status_label.update()
 
     print("CH1 loaded")
-    
-    status_label.config(
-        text="Data loaded successfully!"
-    )
+
+    status_label.config(text="Data loaded successfully!")
     status_label.update()
     status_label.config(
         text="Calculating impulse average... This may take a while...",
     )
     status_label.update()
-    
+
     impulsesNum = int(len(impulseMainData.columns) / 2)
-    
+
     samples = impulseMainData.shape[0]
-    totalTimeus = (samples/WINDOW_SETTINGS['fs'])*1e6
+    totalTimeus = (samples / WINDOW_SETTINGS["fs"]) * 1e6
 
     impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
@@ -86,7 +85,7 @@ def calculate_impulse_ave():
 
     time1 = np.linspace(0, totalTimeus, len(impulse_ave_final))
     np.save(os.path.join(folder, "time1.npy"), time1)
-    
+
     status_label.config(
         text="Impulse average calculated successfully!",
     )
@@ -97,7 +96,7 @@ def calculate_impulse_ave():
 
 def load_data(folder):
     global status_label, ram_label, spinbox_BPLowcut, spinbox_HPHighcut
-    
+
     impulseMainData = calculate_impulse_ave()
 
     status_label.config(
@@ -177,9 +176,7 @@ def load_data(folder):
     for col in range(1, reverseHFCTMainData.shape[1], 2):
         reverseHFCTMainData[col] = filtfilt(b_lp, a_lp, reverseHFCTMainData[col].values)
 
-    status_label.config(
-        text="Data loaded successfully!"
-    )
+    status_label.config(text="Data loaded successfully!")
     status_label.update()
 
     return (
@@ -625,7 +622,7 @@ def setup_gui():
         ("4. Calculate TRPD Metadata", calculate_metadata),
         ("5. Save TRPD Metadata", save_metadata),
         ("6. Load TRPD Metadata", load_metadata),
-        ("7. Visualize Data", visualize_data),
+        ("7. Visualize Metadata", visualize_data),
         ("8. Salir", exit_app),
     ]:
         btn = ttk.Button(left_frame, text=text, command=cmd)

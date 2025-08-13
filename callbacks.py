@@ -761,51 +761,58 @@ def register_callbacks(app, df, time, impulse, folder):
     )
     def update_voltage_dependent_graph_1(n_clicks, gain1):
         parent_folder = os.path.dirname(folder)
+
         cache_file = os.path.join(parent_folder, "impulse_data_cache_1.pkl")
+        print(f"\nContenido de parent_folder: {parent_folder}")
+        all_items = os.listdir(parent_folder)
+        print(f"Items encontrados: {all_items}")
         subfolders = [
             f
-            for f in os.listdir(parent_folder)
+            for f in all_items
             if os.path.isdir(os.path.join(parent_folder, f))
         ]
+        print(f"Subcarpetas detectadas: {subfolders}")
         fig1 = go.Figure()
 
-        # Intentar cargar datos cacheados
-        impulse_data = None
+        # Eliminar el archivo de caché para forzar el procesamiento completo
         if os.path.exists(cache_file):
             try:
-                with open(cache_file, "rb") as f:
-                    impulse_data = pickle.load(f)
+                os.remove(cache_file)
+                print(f"Archivo de caché eliminado: {cache_file}")
             except Exception as e:
-                print(f"Error loading cache file {cache_file}: {e}")
-                impulse_data = None
+                print(f"Error eliminando cache file {cache_file}: {e}")
 
-        # Si no hay cache, calcular y guardar
-        if impulse_data is None:
-            impulse_data = []
-            for sub in subfolders:
-                sub_path = os.path.join(parent_folder, sub)
-                impulse_ave_path = os.path.join(sub_path, "impulse_ave_final.npy")
-                if os.path.exists(impulse_ave_path):
-                    try:
-                        impulse_ave = np.load(impulse_ave_path)
-                        metrics = impulse_metrics(impulse_ave)
-                        t0_linear = metrics.get("t0_linear", 0)
-                        impulse_data.append(
-                            {
-                                "sub": sub,
-                                "impulse_ave": impulse_ave,
-                                "t0_linear": t0_linear,
-                                "path": sub_path,
-                            }
-                        )
-                    except Exception as e:
-                        print(f"Error loading {impulse_ave_path}: {e}")
-            # Guardar cache
-            try:
-                with open(cache_file, "wb") as f:
-                    pickle.dump(impulse_data, f)
-            except Exception as e:
-                print(f"Error saving cache file {cache_file}: {e}")
+        # Procesar siempre todas las subcarpetas y guardar delays.csv
+        impulse_data = []
+        for sub in subfolders:
+            sub_path = os.path.join(parent_folder, sub)
+            impulse_ave_path = os.path.join(sub_path, "impulse_ave_final.npy")
+            print(f"Procesando carpeta: {sub}")
+            print(f"Buscando archivo: {impulse_ave_path}")
+            if os.path.exists(impulse_ave_path):
+                print(f"Archivo impulse_ave_final.npy encontrado en {sub}")
+                try:
+                    impulse_ave = np.load(impulse_ave_path)
+                    metrics = impulse_metrics(impulse_ave)
+                    t0_linear = metrics.get("t0_linear", 0)
+                    impulse_data.append(
+                        {
+                            "sub": sub,
+                            "impulse_ave": impulse_ave,
+                            "t0_linear": t0_linear,
+                            "path": sub_path,
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error loading {impulse_ave_path}: {e}")
+            else:
+                print(f"NO se encontró impulse_ave_final.npy en {sub}")
+        # Guardar cache actualizado
+        try:
+            with open(cache_file, "wb") as f:
+                pickle.dump(impulse_data, f)
+        except Exception as e:
+            print(f"Error saving cache file {cache_file}: {e}")
 
         if not impulse_data:
             fig1.update_layout(title="No impulse_ave_final.npy found in subfolders")
@@ -818,31 +825,42 @@ def register_callbacks(app, df, time, impulse, folder):
             sub = data["sub"]
             impulse_ave = data["impulse_ave"]
             t0_linear = data["t0_linear"]
-            # Fuerza la ruta a la unidad E: si no está ya en E:
+            print(f"\n--- Procesando subcarpeta: {sub} ---")
+            print(f"Ruta original: {data['path']}")
             sub_path = os.path.abspath(data["path"])
-            if not sub_path.lower().startswith("e:"):
-                # Cambia la letra de unidad a E: manteniendo el resto del path
+            print(f"Ruta absoluta: {sub_path}")
+            if not sub_path.lower().startswith("d:"):
                 drive, rest = os.path.splitdrive(sub_path)
-                sub_path = os.path.join("E:", rest)
+                sub_path = os.path.join("D:", rest)
                 sub_path = os.path.normpath(sub_path)
+                print(f"Ruta modificada a D: {sub_path}")
+            else:
+                print(f"Ruta ya en D: {sub_path}")
             color = MODERN_PLOTLY_COLORS[i % len(MODERN_PLOTLY_COLORS)]
 
             delay_samples = int(round(max_t0 - t0_linear))
             sample_us = 200.0 / len(impulse_ave)
             delay_us = delay_samples * sample_us
+            print(f"delay_samples: {delay_samples}, sample_us: {sample_us}, delay_us: {delay_us}")
 
             # Asegura que el directorio existe antes de guardar delays.csv
             try:
                 os.makedirs(sub_path, exist_ok=True)
+                print(f"Directorio asegurado: {sub_path}")
                 delays_csv_path = os.path.normpath(os.path.join(sub_path, "delays.csv"))
+                print(f"Intentando guardar en: {delays_csv_path}")
                 if os.path.exists(delays_csv_path):
+                    print(f"delays.csv ya existe en {delays_csv_path}")
                     delays_df = pd.read_csv(delays_csv_path)
                     mask = delays_df["sub"] == sub
+                    print(f"Filas con sub == {sub}: {mask.sum()}")
                     if mask.any():
                         delays_df.loc[
                             mask, ["delay_samples", "delay_us", "t0_linear"]
                         ] = [delay_samples, delay_us, t0_linear]
+                        print(f"Actualizando fila existente para sub: {sub}")
                     else:
+                        print(f"Agregando nueva fila para sub: {sub}")
                         delays_df = pd.concat(
                             [
                                 delays_df,
@@ -860,6 +878,7 @@ def register_callbacks(app, df, time, impulse, folder):
                             ignore_index=True,
                         )
                 else:
+                    print(f"delays.csv no existe, creando nuevo archivo en {delays_csv_path}")
                     delays_df = pd.DataFrame(
                         [
                             {
@@ -871,8 +890,9 @@ def register_callbacks(app, df, time, impulse, folder):
                         ]
                     )
                 delays_df.to_csv(delays_csv_path, index=False)
+                print(f"Archivo delays.csv guardado en {delays_csv_path}")
             except Exception as e:
-                print(f"Error saving delays.csv in {sub_path}: {e}")
+                print(f"Error guardando delays.csv en {sub_path}: {e}")
 
             # Graficar impulse_ave en fig1
             x_full = np.arange(0, 200, 0.002)
@@ -902,6 +922,8 @@ def register_callbacks(app, df, time, impulse, folder):
             trpd_metadata_path = os.path.normpath(
                 os.path.join(parent_folder, subfolders[i], "TRPD_metadata.pkl")
             )
+            print(f"main_hfct_path: {main_hfct_path}")
+            print(f"trpd_metadata_path: {trpd_metadata_path}")
             if os.path.exists(main_hfct_path) and os.path.exists(trpd_metadata_path):
                 try:
                     main_hfct_df = pd.read_csv(main_hfct_path)
@@ -948,7 +970,7 @@ def register_callbacks(app, df, time, impulse, folder):
                                 )
                             )
                 except Exception as e:
-                    print(f"Error loading Main HFCT for {sub}: {e}")
+                    print(f"Error cargando Main HFCT para {sub}: {e}")
 
         fig1.update_layout(
             title="Impulse Average Final for All Subfolders<br>Aligned by t0_linear (delayed to max)",
