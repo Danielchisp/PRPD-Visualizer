@@ -1,26 +1,12 @@
 # %% LIBRARIES
 
-# from tkinter import Tk, filedialog, messagebox, simpledialog
 import os
-# import dash
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-# import plotly.graph_objects as go
-# import scipy.signal
-# from dash import ctx, dcc, html
-# from dash.dependencies import Input, Output
 from numpy.polynomial.polynomial import polyfit
-
-# from IPython import get_ipython
-# from PyQt5.QtWidgets import QApplication, QFileDialog
-# from scipy import signal
 from scipy.fft import fft
-# from scipy.signal import hilbert, morlet, welch, butter, filtfilt
-# from tqdm import tqdm
-# from scipy.integrate import simps, trapz
 import pickle
-# from joblib import load
 
 # %% FUNCTIONS
 

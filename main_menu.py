@@ -45,18 +45,23 @@ ram_label, metadata_label = None, None
 port_selection = None
 
 
-def calculate_impulse_ave():
-
+def calculate_impulse_ave(folder=None):
     global status_label, impulse_ave_final, time1
 
-    folder = get_folder()
+    if folder is None:
+        folder = get_folder()
+        if folder is None:
+            messagebox.showerror("Error", "No folder selected.")
+            status_label.config(
+                text="No folder selected. In order to load the data, you need to select a folder.",
+            )
+            status_label.update()
+            return None
 
     status_label.config(
         text="Loading CH1 data... This may take a while...",
     )
     status_label.update()
-    # Leer el archivo CSV por tramos para actualizar el status_label
-
     impulseMainData = load_channel_data(status_label, CHANNEL_DICT["Impulse"], folder)
 
     update_ram_display()
@@ -73,14 +78,12 @@ def calculate_impulse_ave():
     status_label.update()
 
     impulsesNum = int(len(impulseMainData.columns) / 2)
-
     samples = impulseMainData.shape[0]
     totalTimeus = (samples / WINDOW_SETTINGS["fs"]) * 1e6
 
     impulses_list = [impulseMainData[2 * i + 1] for i in range(impulsesNum)]
     impulse_ave_final = pd.DataFrame([sum(x) / len(x) for x in zip(*impulses_list)])[0]
     impulse_ave_final = resample(impulse_ave_final, impulseDownsample)
-    # Exportar impulse_ave_final como .npy en la carpeta seleccionada
     np.save(os.path.join(folder, "impulse_ave_final.npy"), impulse_ave_final)
 
     time1 = np.linspace(0, totalTimeus, len(impulse_ave_final))
@@ -97,7 +100,7 @@ def calculate_impulse_ave():
 def load_data(folder):
     global status_label, ram_label, spinbox_BPLowcut, spinbox_HPHighcut
 
-    impulseMainData = calculate_impulse_ave()
+    impulseMainData = calculate_impulse_ave(folder)
 
     status_label.config(
         text="Loading CH2 data... This may take a while...",
