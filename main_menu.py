@@ -852,6 +852,27 @@ def load_metadata():
     time1_path = os.path.join(folder, "time1.npy")
     params_path = os.path.join(folder, "gui_params.json")
 
+    # Manejo de errores si los archivos no existen
+    missing_files = []
+    if not os.path.exists(impulse_ave_final_path):
+        missing_files.append("impulse_ave_final.npy")
+    if not os.path.exists(df_path):
+        missing_files.append("TRPD_metadata.pkl")
+    if not os.path.exists(time1_path):
+        missing_files.append("time1.npy")
+        if missing_files:
+            status_label.config(
+                text=f"Error!: The following files were not found: {', '.join(missing_files)}",
+                foreground="black",
+            )
+            status_label.update()
+            # Reset text color to black after showing the error
+            messagebox.showerror(
+                "Error loading metadata",
+                f"The required files were not found:\n{', '.join(missing_files)}\n\nOperation aborted.",
+            )
+            return
+
     try:
         # Leer impulse_ave_final
         impulse_ave_final = np.load(impulse_ave_final_path)

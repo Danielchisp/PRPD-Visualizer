@@ -125,8 +125,7 @@ def create_dash_app(df, scatter_traces, time, impulse, host, port, folder):
                                             html.Div(
                                                 dbc.Row(
                                                     dcc.Markdown(
-                                                        "**Folder Selected:**\n"
-                                                        + folder
+                                                        folder
                                                     )
                                                 ),
                                                 style={
